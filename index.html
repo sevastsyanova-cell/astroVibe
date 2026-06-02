@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Астро-календарь</title>
+
+<style>
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#dff4ff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    max-width:420px;
+    width:100%;
+    padding:40px 30px;
+    border-radius:24px;
+    box-shadow:0 10px 30px rgba(0,0,0,.1);
+    text-align:center;
+}
+
+h1{
+    margin-bottom:15px;
+}
+
+p{
+    color:#666;
+    line-height:1.5;
+}
+
+.button{
+    display:inline-block;
+    margin-top:25px;
+    padding:18px 30px;
+    background:#4dafff;
+    color:white;
+    text-decoration:none;
+    border-radius:16px;
+    font-size:18px;
+    font-weight:600;
+}
+
+.button:hover{
+    opacity:.9;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1>Астро-календарь</h1>
+
+<p>
+Добавьте календарь в iPhone и получайте важные астрологические события прямо в календаре.
+</p>
+
+<a class="button"
+href="webcal://raw.githubusercontent.com/sevastsyanova-cell/astro/main/astro-calendar.ics">
+Добавить календарь
+</a>
+
+</div>
+
+</body>
+</html>

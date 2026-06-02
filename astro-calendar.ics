@@ -1,0 +1,68 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Astro Calendar//RU//EN
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260609
+DTEND;VALUE=DATE:20260610
+SUMMARY:Венера соединение Юпитер
+DESCRIPTION:Один из лучших дней года для финансовых решений, семьи, дома и любви.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260613
+DTEND;VALUE=DATE:20260614
+SUMMARY:Венера входит во Льва
+DESCRIPTION:Время проявляться, привлекать внимание и быть заметной.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260614
+DTEND;VALUE=DATE:20260615
+SUMMARY:Новолуние в Близнецах
+DESCRIPTION:Желания на темы общения, контента, обучения и новых знакомств.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260617
+DTEND;VALUE=DATE:20260618
+SUMMARY:Венера оппозиция Плутон
+DESCRIPTION:Могут вскрыться скрытые темы в отношениях. Время честных разговоров и очищения.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260621
+DTEND;VALUE=DATE:20260622
+SUMMARY:Солнце входит в Рак
+DESCRIPTION:Фокус на доме, семье, корнях и внутренней опоре.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260628
+DTEND;VALUE=DATE:20260629
+SUMMARY:Марс секстиль Юпитер
+DESCRIPTION:Энергия и удача работают вместе. Хороший день для запусков и смелых действий.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260629
+DTEND;VALUE=DATE:20260630
+SUMMARY:Полнолуние в Козероге
+DESCRIPTION:Кульминация в теме карьеры, репутации и публичности.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260629
+DTEND;VALUE=DATE:20260630
+SUMMARY:Меркурий ретроградный
+DESCRIPTION:До 23 июля. Проверяйте документы, не спешите с решениями и покупками.
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260630
+DTEND;VALUE=DATE:20260701
+SUMMARY:Юпитер входит во Льва
+DESCRIPTION:Новая эра творчества, самовыражения, публичности и признания.
+END:VEVENT
+
+END:VCALENDAR
