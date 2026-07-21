@@ -1,1117 +1,916 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Навигатор квадрата Харада</title>
-    <style>
-        /* ===== СТИЛИ (полный набор) ===== */
-        :root {
-            --bg: #f9f7f3;
-            --white: #ffffff;
-            --card-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            --radius: 18px;
-            --radius-sm: 10px;
-            --blue: #4a7c96;
-            --gold: #c4946c;
-            --rose: #e8c4b8;
-            --green: #7baa7b;
-            --gray: #d4d0c8;
-            --text: #3a3530;
-            --text-light: #7a756f;
-            --font: 'Segoe UI', -apple-system, Roboto, 'Helvetica Neue', sans-serif;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: var(--font);
-            background: var(--bg);
-            color: var(--text);
-            padding: 16px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-        #app { max-width: 640px; width: 100%; margin: 0 auto; }
-        .card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--card-shadow);
-            padding: 24px 20px;
-            margin-bottom: 20px;
-            transition: 0.2s ease;
-        }
-        .card-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        .card-sub {
-            font-size: 14px;
-            color: var(--text-light);
-            margin-bottom: 16px;
-            line-height: 1.5;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 28px;
-            font-size: 16px;
-            font-weight: 500;
-            background: var(--blue);
-            color: white;
-            cursor: pointer;
-            transition: 0.2s ease;
-            text-align: center;
-            min-height: 48px;
-            touch-action: manipulation;
-            text-decoration: none;
-            line-height: 1.2;
-        }
-        .btn:hover { opacity: 0.85; }
-        .btn:active { transform: scale(0.97); }
-        .btn-gold { background: var(--gold); }
-        .btn-rose { background: var(--rose); color: var(--text); }
-        .btn-outline { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
-        .btn-sm { padding: 8px 16px; font-size: 14px; min-height: 40px; }
-        .btn-block { display: block; width: 100%; }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-        .btn-group .btn { flex: 1 1 auto; }
-        input, textarea, select {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e8e4dc;
-            border-radius: var(--radius-sm);
-            font-size: 16px;
-            font-family: var(--font);
-            background: white;
-            transition: 0.2s ease;
-            color: var(--text);
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(74,124,150,0.15);
-        }
-        label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 14px; }
-        .field-group { margin-bottom: 18px; }
-        .chip {
-            display: inline-block;
-            background: var(--bg);
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            margin: 3px 4px 3px 0;
-        }
-        .flex { display: flex; gap: 8px; flex-wrap: wrap; }
-        .flex > * { flex: 1 1 auto; min-width: 0; }
-        .grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-        .day-selector { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-        .day-btn {
-            padding: 8px 12px;
-            border-radius: 30px;
-            border: 2px solid #d4d0c8;
-            background: white;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
-            min-width: 44px;
-            text-align: center;
-        }
-        .day-btn.selected { background: var(--blue); color: white; border-color: var(--blue); }
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal {
-            background: white;
-            border-radius: var(--radius);
-            max-width: 560px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 28px 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-        }
-        .modal-overlay.open .modal { transform: scale(1); }
-        .modal .close {
-            float: right;
-            font-size: 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text-light);
-            padding: 0 4px;
-        }
-        .modal .close:hover { color: var(--text); }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: var(--text);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 15px;
-            opacity: 0;
-            transition: all 0.4s ease;
-            z-index: 2000;
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        /* Неделя */
-        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
-        .week-cell {
-            background: #f0ede7;
-            border-radius: 8px;
-            padding: 6px;
-            min-height: 120px;
-            font-size: 13px;
-            border: 1px solid #d4d0c8;
-        }
-        .week-cell .day-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-        .slot-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
-        .task-item {
-            background: white;
-            border-radius: 4px;
-            padding: 2px 6px;
-            margin: 2px 0;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .task-item .del { color: var(--text-light); cursor: pointer; }
-        .matrix-task {
-            background: white;
-            border-radius: 4px;
-            padding: 4px 8px;
-            margin: 4px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-        }
-        .matrix-task .actions { display: flex; gap: 6px; }
-        .matrix-task .actions button { background: none; border: none; cursor: pointer; font-size: 16px; }
-        @media (max-width: 480px) {
-            .week-grid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
-            .week-cell { min-height: 100px; font-size: 11px; }
-            .day-btn { font-size: 12px; min-width: 36px; padding: 6px 8px; }
-            .btn { font-size: 14px; padding: 10px 16px; min-height: 44px; }
-            .card { padding: 18px 14px; }
-        }
-        @media (max-width: 400px) {
-            .week-grid { grid-template-columns: repeat(7, 1fr); gap: 3px; }
-            .week-cell { min-height: 80px; font-size: 10px; padding: 4px; }
-            .task-item { font-size: 10px; padding: 1px 4px; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Навигатор квадрата Харада</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; background: #f9f7f3; max-width: 600px; margin: 0 auto; }
+    .card { background: white; border-radius: 18px; padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+    .btn { background: #4a7c96; color: white; border: none; padding: 12px 24px; border-radius: 28px; font-size: 16px; cursor: pointer; display: inline-block; }
+    .btn-gold { background: #c4946c; }
+    .btn-rose { background: #e8c4b8; color: #3a3530; }
+    .btn-sm { padding: 8px 16px; font-size: 14px; }
+    .btn-block { display: block; width: 100%; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    input, select { width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #e8e4dc; border-radius: 10px; box-sizing: border-box; }
+    .chip { display: inline-block; background: #f0ede7; padding: 4px 12px; border-radius: 20px; margin: 4px; }
+    .flex { display: flex; gap: 8px; }
+    .flex > * { flex: 1; }
+    .grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .day-selector { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+    .day-btn { padding: 8px 12px; border-radius: 30px; border: 2px solid #d4d0c8; background: white; cursor: pointer; font-weight: 500; font-size: 14px; min-width: 44px; text-align: center; }
+    .day-btn.selected { background: #4a7c96; color: white; border-color: #4a7c96; }
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal { background: white; padding: 24px; border-radius: 18px; max-width: 90%; max-height: 80%; overflow-y: auto; }
+    .modal textarea { width: 100%; min-height: 100px; }
+    .close { float: right; font-size: 24px; cursor: pointer; }
+    .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+    .week-cell { background: #f0ede7; border-radius: 8px; padding: 6px; min-height: 120px; font-size: 13px; border: 1px solid #d4d0c8; }
+    .week-cell .day-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .slot-label { font-size: 11px; color: #7a756f; margin-top: 2px; }
+    .task-item { background: white; border-radius: 4px; padding: 2px 6px; margin: 2px 0; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .task-item .del { color: #7a756f; cursor: pointer; }
+    .matrix-task { background: white; border-radius: 4px; padding: 4px 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .matrix-task .actions { display: flex; gap: 6px; }
+    .matrix-task .actions button { background: none; border: none; cursor: pointer; font-size: 16px; }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 30px; z-index: 999; display: none; }
+    .toast.show { display: block; }
+    .help-text { font-size: 14px; color: #7a756f; background: #f5f3ef; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }
+  </style>
 </head>
 <body>
 <div id="app"><div id="screen"></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
-    // ===== ХРАНИЛИЩЕ =====
-    const STORAGE_KEY = 'harada_navigator_final';
-    function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } }
-    function save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  // ===== ХРАНИЛИЩЕ =====
+  const STORAGE_KEY = 'harada_final_v1';
+  function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } }
+  function save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-    let state = load() || {
-        harada: null,
-        selectedDirections: [],
-        actionsChosen: [],
-        actionDays: {},
-        customTasks: [],
-        matrixTasks: [],
-        weekPlan: {},
-        currentStep: 1,
-        _taskIndex: 0,
-        longTermTasks: [],
-    };
+  let state = load() || {
+    harada: null,
+    selectedDirections: [],
+    actionsChosen: [],
+    actionDays: {},
+    actionSlots: {},
+    customTasks: [],
+    matrixTasks: [],
+    weekPlan: {},
+    currentStep: 1,
+    _taskIndex: 0,
+  };
 
-    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-    function toast(msg) {
-        const el = document.getElementById('toast');
-        el.textContent = msg;
-        el.classList.add('show');
-        clearTimeout(el._timer);
-        el._timer = setTimeout(() => el.classList.remove('show'), 3000);
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  function render() {
+    const screen = document.getElementById('screen');
+    if (state.currentStep === 1) renderStep1(screen);
+    else if (state.currentStep === 2) renderStep2(screen);
+    else if (state.currentStep === 3) renderStep3(screen);
+    else if (state.currentStep === 3.5) renderStep35(screen);
+    else screen.innerHTML = '<div class="card"><h2>Готово!</h2></div>';
+  }
+
+  // ============================================================
+  // ШАГ 1 (с ИИ)
+  // ============================================================
+  function renderStep1(container) {
+    const h = state.harada || { goal: '', directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
+    let html = `
+      <div class="card">
+        <h2>🎯 Шаг 1. Квадрат Харада</h2>
+        <div class="help-text">Заполни цель, направления и действия. Если хочешь, попроси ИИ помочь.</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <button class="btn btn-sm" onclick="openPromptModal()">📄 Промпт для ИИ</button>
+          <button class="btn btn-sm btn-gold" onclick="openAIPaste()">🤖 Вставить из ИИ</button>
+        </div>
+        <input id="goal" placeholder="Цель" value="${h.goal}" />
+        <div><strong>8 направлений</strong></div>
+    `;
+    h.directions.forEach((dir, i) => {
+      html += `
+        <div style="margin-top:16px;">
+          <label>Направление ${i+1}</label>
+          <input class="dir-name" data-idx="${i}" value="${dir.name}" placeholder="Название" />
+          <div>
+            ${dir.actions.map((a, ai) => `<span class="chip">${a.text} (${a.freq}) <span onclick="removeAction(${i},${ai})" style="cursor:pointer;">✕</span></span>`).join('')}
+          </div>
+          <div class="flex">
+            <input class="act-text" data-idx="${i}" placeholder="Действие" />
+            <select class="act-freq" data-idx="${i}">
+              <option value="daily">ежедневно</option>
+              <option value="weekly">еженедельно</option>
+              <option value="monthly">ежемесячно</option>
+              <option value="quarterly">раз в 3 мес</option>
+            </select>
+            <button class="btn" onclick="addAction(${i})">+</button>
+          </div>
+        </div>
+      `;
+    });
+    html += `<button class="btn btn-block btn-gold" onclick="saveHarada()">Сохранить квадрат →</button>`;
+    html += `</div>`;
+    container.innerHTML = html;
+    document.getElementById('goal').value = h.goal;
+  }
+
+  window.addAction = function(idx) {
+    const text = document.querySelector(`.act-text[data-idx="${idx}"]`).value.trim();
+    const freq = document.querySelector(`.act-freq[data-idx="${idx}"]`).value;
+    if (!text) return toast('Введите текст');
+    if (!state.harada) state.harada = { goal: '', directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
+    state.harada.directions[idx].actions.push({ id: uid(), text, freq });
+    save(state);
+    render();
+  };
+  window.removeAction = function(idx, actIdx) {
+    if (!state.harada) return;
+    state.harada.directions[idx].actions.splice(actIdx, 1);
+    save(state);
+    render();
+  };
+  window.saveHarada = function() {
+    const goal = document.getElementById('goal').value.trim();
+    if (!goal) return toast('Введите цель');
+    const dirInputs = document.querySelectorAll('.dir-name');
+    const h = { goal, directions: [] };
+    let valid = true;
+    dirInputs.forEach((el, i) => {
+      const name = el.value.trim() || `Направление ${i+1}`;
+      const dir = state.harada?.directions?.[i] || { actions: [] };
+      h.directions.push({ name, actions: dir.actions || [] });
+    });
+    h.directions.forEach((d, i) => {
+      if (d.actions.length === 0) {
+        toast(`В направлении "${d.name || i+1}" нет действий. Добавьте хотя бы одно.`);
+        valid = false;
+      }
+    });
+    if (!valid) return;
+    state.harada = h;
+    save(state);
+    toast('Квадрат сохранён!');
+    state.currentStep = 2;
+    render();
+  };
+
+  // ===== ИИ функции (ПОЛНЫЙ ПРОМПТ И ПАРСЕР) =====
+  const PROMPT_TEXT = `Ты коуч по методу Харада. Помоги мне собрать квадрат 9×9: в центре цель, вокруг 8 направлений, в каждом 8 регулярных действий.
+
+Ограничения (читай первыми):
+1. Ты интервьюер, а не консультант. Не предлагай продукты, форматы, стратегии, цены.
+2. Не называй цифры, которые я не называл(а). Не придумывай чеков и расчётов.
+3. Не подсказывай варианты ответов (без «например: ...»).
+4. Всего не больше 15 вопросов. После ответов переходи к направлениям.
+5. Не предлагай направления и выводы посреди интервью — только на шаге 2.
+6. Не пересказывай мои ответы («фиксирую...», «итак...»). Получил ответ — задавай следующий вопрос.
+7. Один короткий уточняющий вопрос на ответ, только если без него нельзя собрать квадрат.
+8. Если я отвечаю «не знаю» — не отвечай за меня, просто переходи к следующему вопросу.
+9. Задавай только по одному вопросу за раз. Не вываливай список.
+
+Образ результата (держи в голове):
+— Квадрат 9×9: цель по центру, 8 направлений вокруг, в каждом по 8 действий.
+— Каждая ячейка — короткое (до 6 слов) регулярное действие с частотой или триггером, которое можно поставить в календарь.
+— 2–3 направления — про опоры человека (энергия, тело, мышление, восстановление), а не только про дело.
+— Все действия — личные, не делегируемые, реалистичные для моей недели (с учётом времени на контент, рабочих часов, семьи, быта).
+— Финал — чек-лист на первый месяц по неделям, с фокусом на сопротивления и малые шаги.
+
+Шаг 0. Вводная диагностика (задавать строго по одному вопросу, не списком)
+Вопрос 1: Кто ты как эксперт? Ниша, аудитория, тип услуги?
+Вопрос 2: Какое сейчас состояние: выгорание, усталость, норма, заряженность?
+Вопрос 3: Сколько времени в день ты готова тратить на создание и публикацию контента (посты, рилсы, сторис)? (в часах)
+Вопрос 4: Где хочешь больше проявляться: офлайн (встречи, мероприятия) или онлайн (соцсети, эфиры)?
+Вопрос 5: Какие соцсети ведёшь сейчас и сколько подписчиков в каждой?
+Вопрос 6: Сколько подписчиков хочешь иметь через год в каждой из этих соцсетей?
+Вопрос 7: Какой доход хочешь через 12 месяцев? (сумма в месяц)
+Вопрос 8: Сколько часов в день готова работать?
+Вопрос 9: Есть ли что-то, что жёстко ограничивает твоё время? (дети, быт, здоровье)
+
+Шаг 1. Интервью (после вводной диагностики, по одному вопросу за раз)
+Блок 1. Цель
+1. Какая у тебя цель на 12 месяцев? Одной фразой, как будто уже сбылась.
+2. Если цель про доход — из каких конкретных источников он складывается?
+3. Где ты сейчас относительно цели?
+
+Блок 2. Действия
+4. Что ты уже делаешь для достижения цели?
+5. Что делают те, кто такой цели уже достиг?
+6. Какие сферы надо качать, чтобы прийти к цели? Что в каждой из них тебе важно делать?
+
+Блок 3. Сопротивления
+7. Что из этого ты избегаешь делать? (задай только после ответа на вопрос 6)
+8. Что надо делать для цели, но ты точно делать не будешь?
+9. Что нужно изменить в твоей жизни, чтобы цель достигалась легко?
+
+Блок 4. Жизнь и тело
+10. Что в твоей жизни вне цели забирает или даёт время и силы?
+11. Представь цель достигнутой. Как ты себя физически ощущаешь? Что нужно делать регулярно уже сейчас, чтобы прийти к этому ощущению?
+
+Блок 5. Ограничения
+12. Что тебя ещё сдерживает?
+
+Блок 6. Ресурсы
+13. Кто и что у тебя есть в помощь?
+
+Если цель требует уточнений — дозадай 1–2 своих вопроса, не выходя за лимит 15.
+
+Шаг 2. Направления
+После интервью предложи 8 направлений. Правила:
+— Направление — это сфера, а не задача и не инструмент.
+— Направления не пересекаются.
+— 2–3 направления — про опоры (энергия, тело, мышление, восстановление).
+— Для эксперта в соцсетях обязательно включи: видимость/контент, упаковка, продажи, обучение, энергия/тело, восстановление, финансы, мышление.
+— Сопротивления — самые важные ответы, преврати их в малые шаги внутри направлений.
+— Согласуй направления со мной перед заполнением.
+
+Шаг 3. Заполни квадрат по правилам
+— Действие, а не результат.
+— Обязательно частота или триггер («каждое утро», «раз в неделю»).
+— Встаёт в календарь.
+— Без лозунгов.
+— До 6 слов вместе с частотой.
+— Реалистично по времени.
+— Только то, что я могу делать сама.
+
+Особые правила для контента:
+— Задай два уточняющих вопроса: какой формат контента ближе и сколько времени занимает создание одной единицы.
+— Рассчитай реалистичные частоты, чтобы общее время на контент в неделю не превышало заявленное.
+
+Шаг 4. Самопроверка и выдача
+— Проверь каждую ячейку: действие? частота? встанет в календарь? не лозунг?
+— Выдавай в два приёма: сначала текстом, согласуй, затем нарисуй квадрат 9×9 (текстовая таблица).
+
+Шаг 5. Чек-лист на месяц
+— Не все 64 сразу: на первую неделю 3–5, дальше по 2–3.
+— Первыми — действия из сопротивлений, малыми шагами.
+— Раздели: ежедневно, еженедельно, разово.
+— В конце каждой недели строка для отметки.
+
+Важно для финальной выдачи:
+После того как я утвержу квадрат, выдай его в виде нумерованного списка направлений с действиями. Каждое направление начинается с номера и точки, каждое действие – с дефиса или звёздочки. Частота должна быть указана рядом с действием (например, «ежедн», «раз/нед», «раз/мес», «раз/3мес»). Пример формата:
+1. Привлечение
+- пост ТГ ежедн
+- подкаст 2р/нед
+...
+2. Упаковка и контент
+- идея в день
+...
+
+Начинай с короткого приветствия, затем задай вводные вопросы (по одному за раз), потом переходи к интервью.`;
+
+  window.openPromptModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+        <h3>📄 Промпт для ИИ</h3>
+        <pre style="white-space:pre-wrap; background:#f0ede7; padding:12px; border-radius:10px; max-height:300px; overflow:auto;">${PROMPT_TEXT}</pre>
+        <button class="btn btn-block" onclick="navigator.clipboard.writeText(PROMPT_TEXT).then(()=>toast('Скопировано!'))">📋 Скопировать</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  window.openAIPaste = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+        <h3>🤖 Вставь ответ ИИ</h3>
+        <textarea id="aiResponse" rows="8" placeholder="Вставьте ответ ИИ..."></textarea>
+        <button class="btn btn-block" onclick="parseAIResponse()">Распарсить</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('aiResponse')?.focus(), 100);
+  };
+
+  window.parseAIResponse = function() {
+    const textarea = document.getElementById('aiResponse');
+    const text = textarea?.value || '';
+    if (!text.trim()) return toast('Вставьте текст ответа ИИ');
+
+    let goal = '';
+    const goalMatch = text.match(/(?:Цель|Моя цель)[:\s]*(.+?)(?:\n|$)/i);
+    if (goalMatch) goal = goalMatch[1].trim();
+
+    const dirs = [];
+    const dirRegex = /(?:^|\n)\s*(\d+)\.\s*([^\n]+)/g;
+    let match;
+    while ((match = dirRegex.exec(text)) !== null) {
+      const num = parseInt(match[1]);
+      const name = match[2].trim();
+      const start = match.index + match[0].length;
+      let end = text.indexOf(`\n${num+1}.`, start);
+      if (end === -1) end = text.length;
+      const block = text.substring(start, end).trim();
+      const actions = [];
+      block.split('\n').filter(l => l.trim().length > 0).forEach(line => {
+        let freq = 'daily';
+        const lower = line.toLowerCase();
+        // Распознаём все варианты "в неделю"
+        if (lower.includes('нед') || lower.includes('неделю') ||
+            lower.includes('еженедельно') || lower.includes('раз в неделю') ||
+            /\d+\s*р\/нед/.test(lower) || /\d+\s*раза в неделю/.test(lower) ||
+            /\d+-\d+\s*р\/нед/.test(lower) || lower.includes('р/нед')) {
+          freq = 'weekly';
+        } else if (lower.includes('раз в месяц') || lower.includes('ежемесячно') || lower.includes('р/мес')) {
+          freq = 'monthly';
+        } else if (lower.includes('раз в 3 месяца') || lower.includes('квартал') || lower.includes('р/3мес') || lower.includes('ежеквартально')) {
+          freq = 'quarterly';
+        }
+        let clean = line.replace(/^[\s\-•\d.]+/, '').trim();
+        if (clean.length > 3) {
+          actions.push({ id: uid(), text: clean, freq });
+        }
+      });
+      dirs.push({ name, actions });
     }
 
-    function render() {
-        const screen = document.getElementById('screen');
-        if (state.currentStep === 1) renderStep1(screen);
-        else if (state.currentStep === 2) renderStep2(screen);
-        else if (state.currentStep === 3) renderStep3(screen);
-        else if (state.currentStep === 3.5) renderStep35(screen);
-        else screen.innerHTML = '<div class="card"><h2>Готово!</h2></div>';
+    if (!goal) {
+      const firstLine = text.split('\n').find(l => l.trim().length > 10);
+      if (firstLine) goal = firstLine.trim();
     }
 
-    // ============================================================
-    // ШАГ 1
-    // ============================================================
-    function renderStep1(container) {
-        const h = state.harada || { goal: '', directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
-        let html = `
-            <div class="card">
-                <div class="card-title">🎯 Шаг 1. Твой план на год</div>
-                <div class="card-sub">Сформулируй главную цель и разбей её на 8 направлений. Добавь действия с частотой. Можешь воспользоваться помощью ИИ.</div>
-                <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-                    <button class="btn btn-sm" onclick="openPromptModal()">📄 Промпт для ИИ</button>
-                    <button class="btn btn-sm btn-gold" onclick="openAIPaste()">🤖 Вставить из ИИ</button>
-                </div>
-                <div class="field-group">
-                    <label>Моя цель (одной фразой)</label>
-                    <input id="goal" placeholder="Например: Я веду блог на 10 000 подписчиков и зарабатываю 1 млн рублей в месяц" value="${h.goal}" />
-                </div>
-                <div style="margin-bottom:12px;"><strong>8 направлений</strong></div>
-        `;
-        h.directions.forEach((dir, i) => {
-            html += `
-                <div class="field-group" style="margin-bottom:16px;">
-                    <label>Направление ${i+1}</label>
-                    <input class="dir-name" data-idx="${i}" value="${dir.name}" placeholder="Название (например, Привлечение клиентов)" />
-                    <div style="margin-top:6px;">
-                        ${dir.actions.map((a, ai) => `
-                            <span class="chip">${a.text} (${a.freq}) <span onclick="removeAction(${i},${ai})" style="cursor:pointer;">✕</span></span>
-                        `).join('')}
-                    </div>
-                    <div class="flex" style="margin-top:4px;">
-                        <input class="act-text" data-idx="${i}" placeholder="Действие" />
-                        <select class="act-freq" data-idx="${i}">
-                            <option value="daily">ежедневно</option>
-                            <option value="weekly">еженедельно</option>
-                            <option value="monthly">ежемесячно</option>
-                            <option value="quarterly">ежеквартально</option>
-                        </select>
-                        <button class="btn btn-sm btn-gold" onclick="addAction(${i})">+</button>
-                    </div>
-                </div>
-            `;
-        });
-        html += `<button class="btn btn-block" onclick="saveHarada()">Сохранить план →</button>`;
-        html += `</div>`;
-        container.innerHTML = html;
-        document.getElementById('goal').value = h.goal;
+    document.getElementById('goal').value = goal;
+    const dirInputs = document.querySelectorAll('.dir-name');
+    dirInputs.forEach((input, i) => {
+      if (i < dirs.length) {
+        input.value = dirs[i].name;
+        if (!state.harada) state.harada = { goal, directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
+        if (!state.harada.directions[i]) state.harada.directions[i] = { name: dirs[i].name, actions: [] };
+        state.harada.directions[i].actions = dirs[i].actions;
+        state.harada.directions[i].name = dirs[i].name;
+      } else {
+        input.value = '';
+      }
+    });
+    if (!state.harada) state.harada = { goal, directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
+    while (state.harada.directions.length < 8) state.harada.directions.push({ name: '', actions: [] });
+    dirs.forEach((d, i) => {
+      if (i < state.harada.directions.length) {
+        state.harada.directions[i].name = d.name;
+        state.harada.directions[i].actions = d.actions;
+      }
+    });
+    state.harada.goal = goal;
+    save(state);
+    document.querySelector('.modal-overlay')?.remove();
+    toast('Данные вставлены! Проверь и сохрани.');
+    render();
+  };
+
+  // ============================================================
+  // ШАГ 2
+  // ============================================================
+  function renderStep2(container) {
+    const h = state.harada;
+    if (!h) { state.currentStep = 1; render(); return; }
+    const selected = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+    let html = `
+      <div class="card">
+        <h2>🧭 Шаг 2. Выбери фокус на этот месяц</h2>
+        <div class="help-text">Оцени свою энергию – система предложит оптимальное количество направлений.</div>
+        <input type="range" id="energySlider" min="0" max="100" value="70" style="width:100%;" oninput="updateEnergy()" />
+        <div style="display:flex; justify-content:space-between;">
+          <span>0%</span>
+          <span id="energyLabel">70%</span>
+          <span>100%</span>
+        </div>
+        <p>Рекомендуем <strong id="recommendCount">4</strong> направления</p>
+        <div class="grid">
+          <div><strong>Направления</strong></div>
+          <div><strong>Выбрать</strong></div>
+    `;
+    h.directions.forEach((d, i) => {
+      const checked = selected.includes(i) ? 'checked' : '';
+      html += `
+        <div>${d.name || 'Направление '+(i+1)}</div>
+        <div><input type="checkbox" class="dir-check" data-idx="${i}" ${checked} /></div>
+      `;
+    });
+    html += `
+        </div>
+        <button class="btn btn-block" onclick="saveDirections()">Сохранить выбор →</button>
+      </div>
+    `;
+    container.innerHTML = html;
+    setTimeout(updateEnergy, 50);
+  }
+
+  function getDirCountByEnergy(energy) {
+    if (energy >= 80) return 6;
+    if (energy >= 50) return 4;
+    if (energy >= 25) return 2;
+    return 1;
+  }
+  window.updateEnergy = function() {
+    const slider = document.getElementById('energySlider');
+    if (!slider) return;
+    const energy = parseInt(slider.value);
+    document.getElementById('energyLabel').textContent = energy + '%';
+    const count = getDirCountByEnergy(energy);
+    document.getElementById('recommendCount').textContent = count;
+    const checks = document.querySelectorAll('.dir-check');
+    checks.forEach((cb, idx) => {
+      cb.checked = (idx < count);
+    });
+  };
+  window.saveDirections = function() {
+    const checks = document.querySelectorAll('.dir-check:checked');
+    const selected = [];
+    checks.forEach(cb => selected.push(parseInt(cb.dataset.idx)));
+    if (selected.length === 0) return toast('Выберите хотя бы одно направление');
+    state.selectedDirections = selected;
+    save(state);
+    toast('Выбор сохранён!');
+    state.currentStep = 3;
+    render();
+  };
+
+  // ============================================================
+  // ШАГ 3 (пошаговый выбор + календарь для любой weekly)
+  // ============================================================
+  function renderStep3(container) {
+    const h = state.harada;
+    if (!h) { state.currentStep = 1; render(); return; }
+    const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+    let allActions = [];
+    let longTermActions = [];
+    selectedDirs.forEach(idx => {
+      const dir = h.directions[idx];
+      dir.actions.forEach(a => {
+        const action = { ...a, dirName: dir.name, actionId: a.id || uid() };
+        if (a.freq === 'monthly' || a.freq === 'quarterly') {
+          longTermActions.push(action);
+        } else {
+          // Определяем weekly: если freq содержит "нед" или freq === 'weekly'
+          const isWeekly = (a.freq && a.freq.includes('нед')) || a.freq === 'weekly';
+          action._isWeekly = isWeekly;
+          allActions.push(action);
+        }
+      });
+    });
+    if (allActions.length === 0 && longTermActions.length === 0) {
+      container.innerHTML = `<div class="card"><h2>📋 Шаг 3</h2><p>Нет задач.</p><button class="btn btn-block" onclick="state.currentStep=1;render();">Вернуться</button></div>`;
+      return;
+    }
+    if (allActions.length === 0) {
+      container.innerHTML = renderLongTermOnly(longTermActions);
+      return;
+    }
+    if (state._taskIndex >= allActions.length) state._taskIndex = allActions.length - 1;
+    if (state._taskIndex < 0) state._taskIndex = 0;
+    const current = allActions[state._taskIndex];
+    const isChecked = state.actionsChosen.includes(current.actionId);
+    const isWeekly = current._isWeekly === true;
+    const selectedDays = state.actionDays[current.actionId] || [];
+    const daysLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    let daysHtml = '';
+    if (isWeekly) {
+      daysHtml = `
+        <div style="margin-top:12px;">
+          <div style="font-weight:500; font-size:15px;">Выбери дни недели</div>
+          <div style="font-size:13px; color:#7a756f; margin-bottom:4px;">(можно выбрать несколько)</div>
+          <div class="day-selector" data-action-id="${current.actionId}">
+            ${daysLabels.map((label, idx) => {
+              const dayNum = idx+1;
+              const sel = selectedDays.includes(dayNum);
+              return `<button class="day-btn ${sel?'selected':''}" data-day="${dayNum}" onclick="toggleDay('${current.actionId}',${dayNum})">${label}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      `;
     }
 
-    window.addAction = function(idx) {
-        const text = document.querySelector(`.act-text[data-idx="${idx}"]`).value.trim();
-        const freq = document.querySelector(`.act-freq[data-idx="${idx}"]`).value;
-        if (!text) return toast('Введите текст действия');
-        if (!state.harada) state.harada = { goal: '', directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
-        state.harada.directions[idx].actions.push({ id: uid(), text, freq });
-        save(state);
-        render();
-    };
-    window.removeAction = function(idx, actIdx) {
-        if (!state.harada) return;
-        state.harada.directions[idx].actions.splice(actIdx, 1);
-        save(state);
-        render();
-    };
-    window.saveHarada = function() {
-        const goal = document.getElementById('goal').value.trim();
-        if (!goal) return toast('Введите цель');
-        const dirInputs = document.querySelectorAll('.dir-name');
-        const h = { goal, directions: [] };
-        let valid = true;
-        dirInputs.forEach((el, i) => {
-            const name = el.value.trim() || `Направление ${i+1}`;
-            const dir = state.harada?.directions?.[i] || { actions: [] };
-            h.directions.push({ name, actions: dir.actions || [] });
-        });
-        h.directions.forEach((d, i) => {
-            if (d.actions.length === 0) {
-                toast(`В направлении "${d.name || i+1}" нет действий. Добавьте хотя бы одно.`);
-                valid = false;
-            }
-        });
-        if (!valid) return;
-        state.harada = h;
-        save(state);
-        toast('План сохранён!');
-        state.currentStep = 2;
-        render();
-    };
+    // Долгосрочные задачи
+    let longHtml = '';
+    if (longTermActions.length) {
+      longHtml = `
+        <div style="margin-top:20px; border-top:1px solid #d4d0c8; padding-top:12px;">
+          <div style="font-weight:600;">📅 Долгосрочные задачи (раз в месяц/квартал)</div>
+          ${longTermActions.map(a => `
+            <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #f0ede7;">
+              <input type="checkbox" class="long-check" data-id="${a.actionId}" ${state.longTermTasks?.some(t=>t.id===a.actionId&&t.done)?'checked':''} />
+              <span>${a.text} (${a.freq})</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
 
-    // ===== ИИ =====
-    const PROMPT_TEXT = `Ты коуч по методу Харада. Помоги мне собрать квадрат 9×9: цель в центре, вокруг 8 направлений, в каждом по 8 действий.
-    Требования:
-    - Цель должна быть сформулирована одной фразой в настоящем времени.
-    - Каждое действие должно быть коротким (до 6 слов) и содержать частоту: ежедневно, еженедельно, ежемесячно или ежеквартально.
-    - Направления должны покрывать разные сферы: привлечение клиентов, контент, продажи, обучение, энергия, восстановление, финансы, мышление.
-    - 2–3 направления должны быть про опоры (энергия, тело, мышление, восстановление).
-    - В конце выдай квадрат в виде нумерованного списка направлений с действиями. Используй дефисы для действий. Пример:
-    1. Привлечение клиентов
-    - пост в ТГ ежедневно
-    - подкаст еженедельно
-    2. Энергия и тело
-    - медитация утром ежедневно
-    - спорт 3 раза в неделю
-    Важно: частоты указывай строго: ежедневно, еженедельно, ежемесячно, ежеквартально. Для еженедельных задач можно указать "раз в неделю", "2 раза в неделю", "1-3 раза в неделю" и т.п. – главное, чтобы было слово "неделя" или "нед".
-    Начинай с приветствия, затем задавай вопросы по очереди. После интервью выдай готовый квадрат.
+    // Добавление своей задачи
+    let customHtml = `
+      <div style="margin-top:20px; border-top:1px solid #d4d0c8; padding-top:12px;">
+        <div style="font-weight:600;">➕ Добавить свою задачу</div>
+        <div class="flex">
+          <input id="customText" placeholder="Что сделать?" />
+          <button class="btn btn-sm btn-gold" onclick="addCustomTask()">+</button>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <input type="number" id="customDay" min="1" max="31" placeholder="День месяца" style="width:80px;" />
+          <select id="customTime"><option value="morning">Утро</option><option value="afternoon">День</option><option value="evening">Вечер</option></select>
+          <input type="time" id="customExactTime" placeholder="Точное время" style="width:120px;" />
+          <select id="customRepeat"><option value="none">Никогда</option><option value="weekly">Еженедельно</option><option value="monthly">Ежемесячно</option></select>
+        </div>
+        <div style="margin-top:6px; font-size:13px;">Личные: ${state.customTasks?.length||0}</div>
+      </div>
     `;
 
-    window.openPromptModal = function() {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h3>📄 Промпт для ИИ</h3>
-                <pre style="white-space:pre-wrap; background:#f0ede7; padding:12px; border-radius:10px; max-height:300px; overflow:auto; font-size:14px;">${PROMPT_TEXT}</pre>
-                <button class="btn btn-block" onclick="navigator.clipboard.writeText(PROMPT_TEXT).then(()=>toast('Скопировано!'))">📋 Скопировать</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    };
-
-    window.openAIPaste = function() {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h3>🤖 Вставь ответ ИИ</h3>
-                <textarea id="aiResponse" rows="8" placeholder="Вставьте сюда текст ответа ИИ..."></textarea>
-                <button class="btn btn-block" onclick="parseAIResponse()">Распарсить</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    };
-
-    window.parseAIResponse = function() {
-        const text = document.getElementById('aiResponse').value;
-        if (!text.trim()) return toast('Вставьте текст');
-        let goal = '';
-        const goalMatch = text.match(/(?:Цель|Моя цель)[:\s]*(.+?)(?:\n|$)/i);
-        if (goalMatch) goal = goalMatch[1].trim();
-        const dirs = [];
-        const dirRegex = /(?:^|\n)\s*(\d+)\.\s*([^\n]+)/g;
-        let match;
-        while ((match = dirRegex.exec(text)) !== null) {
-            const num = parseInt(match[1]);
-            const name = match[2].trim();
-            const start = match.index + match[0].length;
-            let end = text.indexOf(`\n${num+1}.`, start);
-            if (end === -1) end = text.length;
-            const block = text.substring(start, end).trim();
-            const actions = [];
-            block.split('\n').filter(l => l.trim().length > 0).forEach(line => {
-                let freq = 'daily';
-                const lower = line.toLowerCase();
-                if (lower.includes('нед') || lower.includes('неделю') || lower.includes('еженедельно') || lower.includes('раз в неделю') || /\d+\s*р\/нед/.test(lower) || /\d+\s*раза в неделю/.test(lower) || /\d+-\d+\s*р\/нед/.test(lower) || lower.includes('р/нед')) {
-                    freq = 'weekly';
-                } else if (lower.includes('раз в месяц') || lower.includes('ежемесячно') || lower.includes('р/мес')) {
-                    freq = 'monthly';
-                } else if (lower.includes('раз в 3 месяца') || lower.includes('квартал') || lower.includes('р/3мес') || lower.includes('ежеквартально')) {
-                    freq = 'quarterly';
-                }
-                let clean = line.replace(/^[\s\-•\d.]+/, '').trim();
-                if (clean.length > 3) {
-                    actions.push({ id: uid(), text: clean, freq });
-                }
-            });
-            dirs.push({ name, actions });
-        }
-        if (!goal) {
-            const firstLine = text.split('\n').find(l => l.trim().length > 10);
-            if (firstLine) goal = firstLine.trim();
-        }
-        document.getElementById('goal').value = goal;
-        const dirInputs = document.querySelectorAll('.dir-name');
-        dirInputs.forEach((input, i) => {
-            if (i < dirs.length) {
-                input.value = dirs[i].name;
-                if (!state.harada) state.harada = { goal, directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
-                if (!state.harada.directions[i]) state.harada.directions[i] = { name: dirs[i].name, actions: [] };
-                state.harada.directions[i].actions = dirs[i].actions;
-                state.harada.directions[i].name = dirs[i].name;
-            } else {
-                input.value = '';
-            }
-        });
-        if (!state.harada) state.harada = { goal, directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
-        while (state.harada.directions.length < 8) state.harada.directions.push({ name: '', actions: [] });
-        dirs.forEach((d, i) => {
-            if (i < state.harada.directions.length) {
-                state.harada.directions[i].name = d.name;
-                state.harada.directions[i].actions = d.actions;
-            }
-        });
-        state.harada.goal = goal;
+    let html = `
+      <div class="card">
+        <h2>📋 Шаг 3. Выбери задачи</h2>
+        <div class="help-text">Мы показываем задачи по одной, чтобы не перегружать. Для еженедельных выбери дни.</div>
+        <p>Задача ${state._taskIndex+1} из ${allActions.length} (выбрано: ${state.actionsChosen.length})</p>
+        <div style="display:flex; align-items:center; gap:20px; padding:20px 0; border-top:2px solid #4a7c96; border-bottom:2px solid #4a7c96; margin:16px 0;">
+          <div style="flex:1; font-size:20px; font-weight:500;">${current.text}</div>
+          <div>
+            <label style="display:block; text-align:center; font-size:14px;">Взять</label>
+            <input type="checkbox" class="action-check-single" data-id="${current.actionId}" ${isChecked?'checked':''} style="width:40px;height:40px;cursor:pointer;" />
+          </div>
+        </div>
+        ${daysHtml}
+        <div style="display:flex; gap:10px; justify-content:space-between; margin-top:16px;">
+          <button class="btn btn-outline" onclick="prevTask()" ${state._taskIndex===0?'disabled':''}>← Назад</button>
+          <button class="btn" onclick="nextTask()">Далее →</button>
+        </div>
+        <button class="btn btn-gold btn-block" style="margin-top:16px;" onclick="finishStep3()">✅ Завершить выбор (${state.actionsChosen.length} задач)</button>
+        ${longHtml}
+        ${customHtml}
+      </div>
+    `;
+    container.innerHTML = html;
+    // Обработчик чекбокса
+    document.querySelector('.action-check-single')?.addEventListener('change', function() {
+      const id = this.dataset.id;
+      if (this.checked) { if (!state.actionsChosen.includes(id)) state.actionsChosen.push(id); }
+      else { state.actionsChosen = state.actionsChosen.filter(item => item !== id); }
+      save(state);
+      render();
+    });
+    // Обработчики долгосрочных
+    document.querySelectorAll('.long-check').forEach(el => {
+      el.addEventListener('change', function() {
+        const id = this.dataset.id;
+        if (!state.longTermTasks) state.longTermTasks = [];
+        let task = state.longTermTasks.find(t => t.id === id);
+        if (!task) { task = { id, done: false }; state.longTermTasks.push(task); }
+        task.done = this.checked;
         save(state);
-        document.querySelector('.modal-overlay').remove();
-        toast('Данные вставлены! Проверь и сохрани.');
-        render();
-    };
+      });
+    });
+  }
 
-    // ============================================================
-    // ШАГ 2
-    // ============================================================
-    function renderStep2(container) {
-        const h = state.harada;
-        if (!h) { state.currentStep = 1; render(); return; }
-        const selected = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
-        let html = `
-            <div class="card">
-                <div class="card-title">🧭 Шаг 2. Выбери фокус на этот месяц</div>
-                <div class="card-sub">Оцени свою энергию, чтобы не перегружаться. Система предложит подходящее количество направлений.</div>
-                <div class="field-group">
-                    <label>Моя энергия сейчас (0–100%)</label>
-                    <input type="range" id="energySlider" min="0" max="100" value="70" style="width:100%;" oninput="updateEnergy()" />
-                    <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-light);">
-                        <span>0%</span>
-                        <span id="energyLabel">70%</span>
-                        <span>100%</span>
-                    </div>
-                    <div style="text-align:center; margin-top:4px; font-size:14px; color:var(--blue);">
-                        Рекомендуем <strong id="recommendCount">4</strong> направления
-                    </div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; margin-top:8px;">
-                    <div style="font-weight:600; font-size:14px; color:var(--text-light);">Направления</div>
-                    <div style="font-weight:600; font-size:14px; color:var(--text-light);">Выбрать</div>
-        `;
-        h.directions.forEach((d, i) => {
-            const checked = selected.includes(i) ? 'checked' : '';
-            html += `
-                <div style="padding:4px 0; border-bottom:1px solid #f0ede7;">${d.name || 'Направление '+(i+1)}</div>
-                <div style="padding:4px 0; text-align:center;"><input type="checkbox" class="dir-check" data-idx="${i}" ${checked} /></div>
-            `;
-        });
-        html += `
-                </div>
-                <button class="btn btn-block" onclick="saveDirections()">Сохранить выбор →</button>
-            </div>
-        `;
-        container.innerHTML = html;
-        setTimeout(updateEnergy, 50);
+  function renderLongTermOnly(longTermActions) {
+    let html = `<div class="card"><h2>📋 Шаг 3. Долгосрочные задачи</h2>`;
+    longTermActions.forEach(a => {
+      const done = state.longTermTasks?.some(t=>t.id===a.actionId&&t.done);
+      html += `<div style="display:flex; gap:8px; padding:4px 0; border-bottom:1px solid #f0ede7;">
+        <input type="checkbox" class="long-check" data-id="${a.actionId}" ${done?'checked':''} />
+        <span>${a.text} (${a.freq})</span>
+      </div>`;
+    });
+    html += `<button class="btn btn-block" onclick="finishStep3()">✅ Далее</button></div>`;
+    return html;
+  }
+
+  window.toggleDay = function(actionId, dayNum) {
+    if (!state.actionDays[actionId]) state.actionDays[actionId] = [];
+    const days = state.actionDays[actionId];
+    const idx = days.indexOf(dayNum);
+    if (idx > -1) days.splice(idx, 1);
+    else days.push(dayNum);
+    days.sort((a,b)=>a-b);
+    save(state);
+    const container = document.querySelector(`.day-selector[data-action-id="${actionId}"]`);
+    if (container) {
+      container.querySelectorAll('.day-btn').forEach(btn => {
+        const day = parseInt(btn.dataset.day);
+        btn.classList.toggle('selected', days.includes(day));
+      });
     }
+  };
 
-    function getDirCountByEnergy(energy) {
-        if (energy >= 80) return 6;
-        if (energy >= 50) return 4;
-        if (energy >= 25) return 2;
-        return 1;
+  window.prevTask = function() {
+    if (state._taskIndex > 0) { state._taskIndex--; render(); }
+  };
+  window.nextTask = function() {
+    const h = state.harada;
+    if (!h) return;
+    const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+    let allActions = [];
+    selectedDirs.forEach(idx => {
+      const dir = h.directions[idx];
+      dir.actions.forEach(a => {
+        if (a.freq === 'monthly' || a.freq === 'quarterly') return;
+        allActions.push({ ...a, dirName: dir.name, actionId: a.id || uid() });
+      });
+    });
+    if (state._taskIndex < allActions.length - 1) {
+      state._taskIndex++;
+      render();
+    } else {
+      toast('Все задачи просмотрены');
     }
-    window.updateEnergy = function() {
-        const slider = document.getElementById('energySlider');
-        if (!slider) return;
-        const energy = parseInt(slider.value);
-        document.getElementById('energyLabel').textContent = energy + '%';
-        const count = getDirCountByEnergy(energy);
-        document.getElementById('recommendCount').textContent = count;
-        const checks = document.querySelectorAll('.dir-check');
-        checks.forEach((cb, idx) => { cb.checked = (idx < count); });
-    };
-    window.saveDirections = function() {
-        const checks = document.querySelectorAll('.dir-check:checked');
-        const selected = [];
-        checks.forEach(cb => selected.push(parseInt(cb.dataset.idx)));
-        if (selected.length === 0) return toast('Выберите хотя бы одно направление');
-        state.selectedDirections = selected;
-        save(state);
-        toast('Выбор сохранён!');
-        state.currentStep = 3;
-        render();
-    };
+  };
 
-    // ============================================================
-    // ШАГ 3 (пошаговый выбор + календарь для weekly)
-    // ============================================================
-    function renderStep3(container) {
-        const h = state.harada;
-        if (!h) { state.currentStep = 1; render(); return; }
-        const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
-        let allActions = [];
-        let longTermActions = [];
-        selectedDirs.forEach(idx => {
-            const dir = h.directions[idx];
-            dir.actions.forEach(a => {
-                const action = { ...a, dirName: dir.name, actionId: a.id || uid() };
-                if (a.freq === 'monthly' || a.freq === 'quarterly') {
-                    longTermActions.push(action);
-                } else {
-                    // Распознаём weekly по наличию "нед" или "неделю" или freq === 'weekly'
-                    const isWeekly = (a.freq && (a.freq.includes('нед') || a.freq.includes('неделю') || a.freq === 'weekly'));
-                    action._isWeekly = isWeekly;
-                    allActions.push(action);
-                }
-            });
-        });
-        if (allActions.length === 0 && longTermActions.length === 0) {
-            container.innerHTML = `<div class="card"><h2>📋 Шаг 3</h2><p>Нет задач для выбора. Добавьте действия в квадрате.</p><button class="btn btn-block" onclick="state.currentStep=1;render();">Вернуться</button></div>`;
-            return;
-        }
-        if (allActions.length === 0) {
-            container.innerHTML = renderLongTermOnly(longTermActions);
-            return;
-        }
-        if (state._taskIndex >= allActions.length) state._taskIndex = allActions.length - 1;
-        if (state._taskIndex < 0) state._taskIndex = 0;
-        const current = allActions[state._taskIndex];
-        const isChecked = state.actionsChosen.includes(current.actionId);
-        const isWeekly = current._isWeekly === true;
-        const selectedDays = state.actionDays[current.actionId] || [];
-        const daysLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-
-        let daysHtml = '';
-        if (isWeekly) {
-            daysHtml = `
-                <div style="margin-top:12px;">
-                    <div style="font-weight:500; font-size:15px;">Выбери дни недели</div>
-                    <div style="font-size:13px; color:#7a756f; margin-bottom:4px;">(можно выбрать несколько)</div>
-                    <div class="day-selector" data-action-id="${current.actionId}">
-                        ${daysLabels.map((label, idx) => {
-                            const dayNum = idx+1;
-                            const sel = selectedDays.includes(dayNum);
-                            return `<button class="day-btn ${sel?'selected':''}" data-day="${dayNum}" onclick="toggleDay('${current.actionId}',${dayNum})">${label}</button>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Долгосрочные задачи
-        let longHtml = '';
-        if (longTermActions.length) {
-            longHtml = `
-                <div style="margin-top:20px; border-top:1px solid #d4d0c8; padding-top:12px;">
-                    <div style="font-weight:600;">📅 Долгосрочные задачи (раз в месяц/квартал)</div>
-                    <div style="font-size:13px; color:#7a756f; margin-bottom:8px;">Отметь галочкой, если уже сделал(а).</div>
-                    ${longTermActions.map(a => {
-                        const done = state.longTermTasks?.some(t => t.id === a.actionId && t.done);
-                        return `<div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #f0ede7;">
-                            <input type="checkbox" class="long-check" data-id="${a.actionId}" ${done?'checked':''} />
-                            <span>${a.text} (${a.freq})</span>
-                        </div>`;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        // Свои задачи
-        let customHtml = `
-            <div style="margin-top:20px; border-top:1px solid #d4d0c8; padding-top:12px;">
-                <div style="font-weight:600;">➕ Добавить свою задачу</div>
-                <div class="field-group" style="margin-bottom:8px;">
-                    <input id="customText" placeholder="Что нужно сделать? (например, оплатить налог)" />
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
-                    <div>
-                        <label style="font-size:12px;">День месяца</label>
-                        <input type="number" id="customDay" min="1" max="31" placeholder="27" />
-                    </div>
-                    <div>
-                        <label style="font-size:12px;">Время суток</label>
-                        <select id="customTime">
-                            <option value="morning">Утро</option>
-                            <option value="afternoon">День</option>
-                            <option value="evening">Вечер</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:12px;">Конкретное время</label>
-                        <input type="time" id="customTimeExact" value="10:00" />
-                    </div>
-                </div>
-                <div class="field-group" style="margin-top:6px;">
-                    <label style="font-size:12px;">Повторять</label>
-                    <select id="customRepeat">
-                        <option value="none">Никогда</option>
-                        <option value="weekly">Еженедельно</option>
-                        <option value="monthly">Ежемесячно</option>
-                        <option value="yearly">Ежегодно</option>
-                    </select>
-                </div>
-                <button class="btn btn-sm btn-gold" onclick="addCustomTask()">➕ Добавить</button>
-                <div style="margin-top:6px; font-size:13px; color:var(--text-light);">
-                    Личные задачи: ${state.customTasks?.length||0}
-                    <span style="margin-left:12px;"><a href="#" onclick="showCustomTasks()">Показать</a></span>
-                </div>
-            </div>
-        `;
-
-        let html = `
-            <div class="card">
-                <div class="card-title">📋 Шаг 3. Выбери задачи на эту неделю</div>
-                <div class="card-sub">Мы показываем задачи по одной, чтобы не перегружать. Для еженедельных задач выбери дни.</div>
-                <div style="font-size:14px; color:var(--text-light); margin-bottom:8px;">
-                    Задача ${state._taskIndex+1} из ${allActions.length} (выбрано: ${state.actionsChosen.length})
-                </div>
-                <div style="display:flex; align-items:center; gap:20px; padding:16px 0; border-top:2px solid var(--blue); border-bottom:2px solid var(--blue); margin-bottom:16px;">
-                    <div style="flex:1; font-size:18px; font-weight:500;">${current.text}</div>
-                    <div>
-                        <label style="display:block; text-align:center; font-size:14px;">Взять</label>
-                        <input type="checkbox" class="action-check-single" data-id="${current.actionId}" ${isChecked?'checked':''} style="width:40px; height:40px; cursor:pointer;" />
-                    </div>
-                </div>
-                ${daysHtml}
-                <div style="display:flex; gap:10px; justify-content:space-between;">
-                    <button class="btn btn-outline" onclick="prevTask()" ${state._taskIndex===0?'disabled':''}>← Назад</button>
-                    <button class="btn" onclick="nextTask()">Далее →</button>
-                </div>
-                <button class="btn btn-gold btn-block" style="margin-top:16px;" onclick="finishStep3()">✅ Завершить выбор (${state.actionsChosen.length} задач)</button>
-                ${longHtml}
-                ${customHtml}
-            </div>
-        `;
-        container.innerHTML = html;
-        // Обработчик чекбокса
-        document.querySelector('.action-check-single')?.addEventListener('change', function() {
-            const id = this.dataset.id;
-            if (this.checked) { if (!state.actionsChosen.includes(id)) state.actionsChosen.push(id); }
-            else { state.actionsChosen = state.actionsChosen.filter(item => item !== id); }
-            save(state);
-            render();
-        });
-        // Обработчики долгосрочных
-        document.querySelectorAll('.long-check').forEach(el => {
-            el.addEventListener('change', function() {
-                const id = this.dataset.id;
-                if (!state.longTermTasks) state.longTermTasks = [];
-                let task = state.longTermTasks.find(t => t.id === id);
-                if (!task) { task = { id, done: false }; state.longTermTasks.push(task); }
-                task.done = this.checked;
-                save(state);
-            });
-        });
-    }
-
-    function renderLongTermOnly(longTermActions) {
-        let html = `<div class="card"><h2>📋 Шаг 3. Долгосрочные задачи</h2><div class="card-sub">Отметь, что уже сделано.</div>`;
-        longTermActions.forEach(a => {
-            const done = state.longTermTasks?.some(t => t.id === a.actionId && t.done);
-            html += `<div style="display:flex; gap:8px; padding:4px 0; border-bottom:1px solid #f0ede7;">
-                <input type="checkbox" class="long-check" data-id="${a.actionId}" ${done?'checked':''} />
-                <span>${a.text} (${a.freq})</span>
-            </div>`;
-        });
-        html += `<button class="btn btn-block" onclick="finishStep3()">✅ Далее</button></div>`;
-        return html;
-    }
-
-    window.toggleDay = function(actionId, dayNum) {
-        if (!state.actionDays[actionId]) state.actionDays[actionId] = [];
-        const days = state.actionDays[actionId];
-        const idx = days.indexOf(dayNum);
-        if (idx > -1) days.splice(idx, 1);
-        else days.push(dayNum);
-        days.sort((a,b)=>a-b);
-        save(state);
-        // Обновляем UI
-        const container = document.querySelector(`.day-selector[data-action-id="${actionId}"]`);
-        if (container) {
-            container.querySelectorAll('.day-btn').forEach(btn => {
-                const day = parseInt(btn.dataset.day);
-                btn.classList.toggle('selected', days.includes(day));
-            });
-        }
-    };
-
-    window.prevTask = function() {
-        if (state._taskIndex > 0) { state._taskIndex--; render(); }
-    };
-    window.nextTask = function() {
-        const h = state.harada;
-        if (!h) return;
-        const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
-        let allActions = [];
-        selectedDirs.forEach(idx => {
-            const dir = h.directions[idx];
-            dir.actions.forEach(a => {
-                if (a.freq === 'monthly' || a.freq === 'quarterly') return;
-                allActions.push({ ...a, dirName: dir.name, actionId: a.id || uid() });
-            });
-        });
-        if (state._taskIndex < allActions.length - 1) {
-            state._taskIndex++;
-            render();
-        } else {
-            toast('Все задачи просмотрены');
-        }
-    };
-
-    window.addCustomTask = function() {
-        const text = document.getElementById('customText').value.trim();
-        if (!text) return toast('Введите название');
-        const day = parseInt(document.getElementById('customDay').value) || null;
-        const time = document.getElementById('customTime').value || 'morning';
-        const timeExact = document.getElementById('customTimeExact').value || null;
-        const repeat = document.getElementById('customRepeat').value || 'none';
-        if (!state.customTasks) state.customTasks = [];
-        state.customTasks.push({
-            id: uid(),
-            text,
-            date: day,
-            timeSlot: time,
-            timeExact,
-            repeat,
-            done: false
-        });
-        save(state);
-        toast('Задача добавлена');
-        render();
-    };
-
-    window.showCustomTasks = function() {
-        const tasks = state.customTasks || [];
-        if (tasks.length === 0) { toast('Нет личных задач'); return; }
-        let msg = '📋 Мои личные задачи:\n';
-        tasks.forEach((t, i) => {
-            const dateInfo = t.date ? ` (${t.date}-е число)` : '';
-            const timeInfo = t.timeExact ? ` в ${t.timeExact}` : (t.timeSlot ? `, ${t.timeSlot}` : '');
-            msg += `${i+1}. ${t.text}${dateInfo}${timeInfo} ${t.done ? '✅' : '⬜'}\n`;
-        });
-        alert(msg);
-    };
-
-    window.finishStep3 = function() {
-        const cb = document.querySelector('.action-check-single');
-        if (cb) {
-            const id = cb.dataset.id;
-            if (cb.checked && !state.actionsChosen.includes(id)) state.actionsChosen.push(id);
-            else if (!cb.checked && state.actionsChosen.includes(id)) state.actionsChosen = state.actionsChosen.filter(item => item !== id);
-            save(state);
-        }
-        toast(`Выбрано ${state.actionsChosen.length} задач`);
-        // Инициализируем weekPlan
-        initWeekPlan();
-        state.currentStep = 3.5;
-        render();
-    };
-
-    function initWeekPlan() {
-        const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-        state.weekPlan = {};
-        days.forEach(d => { state.weekPlan[d] = { morning: [], afternoon: [], evening: [] }; });
-        // Распределяем задачи по дням из actionDays
-        const h = state.harada;
-        if (!h) { save(state); return; }
-        const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
-        let allActions = [];
-        selectedDirs.forEach(idx => {
-            const dir = h.directions[idx];
-            dir.actions.forEach(a => {
-                if (state.actionsChosen.includes(a.id || a.text) && a.freq !== 'monthly' && a.freq !== 'quarterly') {
-                    allActions.push({ ...a, actionId: a.id || a.text });
-                }
-            });
-        });
-        const dayMap = { 1:'monday',2:'tuesday',3:'wednesday',4:'thursday',5:'friday',6:'saturday',7:'sunday' };
-        allActions.forEach(a => {
-            const daysSel = state.actionDays[a.actionId] || [];
-            daysSel.forEach(d => {
-                const key = dayMap[d];
-                if (state.weekPlan[key]) {
-                    // По умолчанию кладём в утро, но пользователь сможет переназначить
-                    state.weekPlan[key].morning.push(a.actionId);
-                }
-            });
-        });
-        save(state);
-    }
-
-    // ============================================================
-    // ШАГ 3.5 (неделя + матрица)
-    // ============================================================
-    function renderStep35(container) {
-        const h = state.harada;
-        if (!h) { state.currentStep = 1; render(); return; }
-        const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
-        let allActions = [];
-        selectedDirs.forEach(idx => {
-            const dir = h.directions[idx];
-            dir.actions.forEach(a => {
-                if (state.actionsChosen.includes(a.id || a.text) && a.freq !== 'monthly' && a.freq !== 'quarterly') {
-                    allActions.push({ ...a, actionId: a.id || a.text });
-                }
-            });
-        });
-        // Custom tasks
-        const customSelected = state.customTasks?.filter(t => !t.done) || [];
-
-        // Убедимся, что weekPlan существует
-        if (!state.weekPlan || Object.keys(state.weekPlan).length === 0) {
-            const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-            state.weekPlan = {};
-            days.forEach(d => { state.weekPlan[d] = { morning: [], afternoon: [], evening: [] }; });
-            save(state);
-        }
-
-        const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-        const dayLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-        const slots = ['morning', 'afternoon', 'evening'];
-        const slotLabels = { morning: 'Утро', afternoon: 'День', evening: 'Вечер' };
-
-        // Карта дней
-        const daysMap = {};
-        dayKeys.forEach(key => {
-            daysMap[key] = { morning: [], afternoon: [], evening: [] };
-            const plan = state.weekPlan[key] || { morning: [], afternoon: [], evening: [] };
-            Object.keys(plan).forEach(slot => {
-                const ids = plan[slot] || [];
-                ids.forEach(id => {
-                    const found = allActions.find(a => a.actionId === id) || customSelected.find(t => t.id === id);
-                    if (found) daysMap[key][slot].push(found);
-                });
-            });
-        });
-
-        // Задачи без дня
-        const assigned = new Set();
-        dayKeys.forEach(key => {
-            const plan = state.weekPlan[key] || { morning: [], afternoon: [], evening: [] };
-            Object.values(plan).forEach(arr => arr.forEach(id => assigned.add(id)));
-        });
-        const noDayTasks = [...allActions, ...customSelected].filter(t => !assigned.has(t.id || t.actionId));
-
-        // Сетка недели
-        let weekHtml = `<div class="week-grid">`;
-        dayKeys.forEach((key, idx) => {
-            const slotsData = daysMap[key];
-            weekHtml += `<div class="week-cell"><div class="day-label">${dayLabels[idx]}</div>`;
-            slots.forEach(slot => {
-                const tasks = slotsData[slot] || [];
-                if (tasks.length === 0) {
-                    weekHtml += `<div class="slot-label">${slotLabels[slot]}: —</div>`;
-                } else {
-                    weekHtml += `<div class="slot-label">${slotLabels[slot]}:</div>`;
-                    tasks.forEach(t => {
-                        const timeExact = t.timeExact ? ` (${t.timeExact})` : '';
-                        weekHtml += `<div class="task-item">${t.text}${timeExact} <span class="del" onclick="removeFromDay('${t.id || t.actionId}','${key}','${slot}')">✕</span></div>`;
-                    });
-                }
-            });
-            weekHtml += `</div>`;
-        });
-        weekHtml += `</div>`;
-
-        // Блок задач без дня
-        let noDayHtml = '';
-        if (noDayTasks.length > 0) {
-            noDayHtml = `
-                <div style="margin-top:16px; border-top:1px solid #d4d0c8; padding-top:12px;">
-                    <div style="font-weight:600;">⚠️ Задачи без дня (${noDayTasks.length})</div>
-                    <div style="font-size:13px; color:#7a756f; margin-bottom:8px;">Назначь день и время, или отправь в приоритеты.</div>
-                    ${noDayTasks.map(t => {
-                        const timeExact = t.timeExact ? ` (${t.timeExact})` : '';
-                        return `<div style="display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid #f0ede7; flex-wrap:wrap;">
-                            <span style="font-size:14px;">${t.text}${timeExact}</span>
-                            <select class="assign-day" data-id="${t.id || t.actionId}" style="width:auto; padding:4px 8px; font-size:12px;">
-                                <option value="">День</option>
-                                ${dayKeys.map((dk, i) => `<option value="${dk}">${dayLabels[i]}</option>`).join('')}
-                            </select>
-                            <select class="assign-slot" data-id="${t.id || t.actionId}" style="width:auto; padding:4px 8px; font-size:12px;">
-                                <option value="morning">Утро</option>
-                                <option value="afternoon">День</option>
-                                <option value="evening">Вечер</option>
-                            </select>
-                            <button class="btn btn-sm btn-gold" onclick="assignTaskFromNoDay(this)">➡️ Назначить</button>
-                            <button class="btn btn-sm btn-rose" onclick="sendToMatrix('${t.id || t.actionId}')">📊 В приоритеты</button>
-                        </div>`;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        let html = `
-            <div class="card">
-                <div class="card-title">📅 Твоя неделя</div>
-                <div class="card-sub">Проверь распределение задач по дням. Перемещай их в нужные слоты.</div>
-                ${weekHtml}
-                ${noDayHtml}
-                <div style="margin-top:16px;">
-                    <button class="btn btn-gold" onclick="openMatrixModal()">❓ Приоритеты (важно/срочно)</button>
-                </div>
-                <button class="btn btn-block" style="margin-top:16px;" onclick="saveWeekPlan()">✅ Сохранить план на неделю</button>
-            </div>
-        `;
-        container.innerHTML = html;
-        // Вешаем обработчики на кнопки назначения
-        document.querySelectorAll('.assign-task-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const container = this.closest('.assign-container');
-                const id = container.querySelector('.assign-day').dataset.id;
-                const day = container.querySelector('.assign-day').value;
-                const slot = container.querySelector('.assign-slot').value;
-                if (!day || !slot) return toast('Выберите день и время');
-                assignTask(id, day, slot);
-            });
-        });
-    }
-
-    // ===== ФУНКЦИИ ДЛЯ ШАГА 3.5 =====
-    window.assignTaskFromNoDay = function(btn) {
-        const container = btn.parentElement;
-        const daySelect = container.querySelector('.assign-day');
-        const slotSelect = container.querySelector('.assign-slot');
-        const id = daySelect.dataset.id;
-        const day = daySelect.value;
-        const slot = slotSelect.value;
-        if (!day || !slot) return toast('Выберите день и время');
-        assignTask(id, day, slot);
-    };
-
-    window.assignTask = function(actionId, dayKey, slot) {
-        if (!dayKey || !slot) return toast('Выберите день и время');
-        if (!state.weekPlan) {
-            const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-            state.weekPlan = {};
-            days.forEach(d => { state.weekPlan[d] = { morning: [], afternoon: [], evening: [] }; });
-        }
-        if (!state.weekPlan[dayKey]) state.weekPlan[dayKey] = { morning: [], afternoon: [], evening: [] };
-        // Удаляем из всех других слотов
-        Object.keys(state.weekPlan).forEach(k => {
-            Object.keys(state.weekPlan[k]).forEach(s => {
-                state.weekPlan[k][s] = state.weekPlan[k][s].filter(id => id !== actionId);
-            });
-        });
-        state.weekPlan[dayKey][slot].push(actionId);
-        save(state);
-        toast(`Задача добавлена в ${dayKey}, ${slot}`);
-        render();
-    };
-
-    window.removeFromDay = function(actionId, dayKey, slot) {
-        if (state.weekPlan && state.weekPlan[dayKey] && state.weekPlan[dayKey][slot]) {
-            state.weekPlan[dayKey][slot] = state.weekPlan[dayKey][slot].filter(id => id !== actionId);
-            save(state);
-            render();
-        }
-    };
-
-    window.sendToMatrix = function(actionId) {
-        const h = state.harada;
-        if (!h) return;
-        let task = null;
-        for (let dir of h.directions) {
-            for (let a of dir.actions) {
-                if ((a.id || a.text) === actionId) {
-                    task = { id: actionId, text: a.text, quadrant: 'plan' };
-                    break;
-                }
-            }
-            if (task) break;
-        }
-        if (!task) {
-            const custom = state.customTasks?.find(t => t.id === actionId);
-            if (custom) task = { id: actionId, text: custom.text, quadrant: 'plan' };
-        }
-        if (!task) { toast('Задача не найдена'); return; }
-        if (!state.matrixTasks) state.matrixTasks = [];
-        if (!state.matrixTasks.find(t => t.id === actionId)) state.matrixTasks.push(task);
-        // Удаляем из недели
-        if (state.weekPlan) {
-            Object.keys(state.weekPlan).forEach(k => {
-                Object.keys(state.weekPlan[k]).forEach(s => {
-                    state.weekPlan[k][s] = state.weekPlan[k][s].filter(id => id !== actionId);
-                });
-            });
-        }
-        save(state);
-        toast('Задача отправлена в приоритеты');
-        render();
-    };
-
-    window.openMatrixModal = function() {
-        const tasks = state.matrixTasks || [];
-        if (tasks.length === 0) { toast('В приоритетах пока нет задач'); return; }
-        const quadrants = {
-            now: { label: '🔥 Сделать сейчас', color: '#d4edda' },
-            plan: { label: '📅 Запланировать', color: '#fff3cd' },
-            minute: { label: '⚡ Задания на минуту', color: '#f8d7da' },
-            joy: { label: '🎁 Для себя и радости', color: '#e2e3e5' }
-        };
-        let html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">`;
-        Object.keys(quadrants).forEach(key => {
-            const q = quadrants[key];
-            const items = tasks.filter(t => t.quadrant === key);
-            html += `
-                <div style="background:${q.color}; border-radius:8px; padding:10px; min-height:80px;">
-                    <div style="font-weight:600; font-size:14px;">${q.label}</div>
-                    ${items.map(t => `
-                        <div class="matrix-task">
-                            <span>${t.text}</span>
-                            <div class="actions">
-                                <button onclick="moveTaskFromMatrix('${t.id}')">↩️</button>
-                                <button onclick="markMatrixDone('${t.id}')">✅</button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        });
-        html += `</div>`;
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h3>📊 Приоритеты (важно/срочно)</h3>
-                ${html}
-            </div>
-        `;
-        document.body.appendChild(modal);
-    };
-
-    window.moveTaskFromMatrix = function(id) {
-        const idx = state.matrixTasks.findIndex(t => t.id === id);
-        if (idx > -1) {
-            const task = state.matrixTasks[idx];
-            state.matrixTasks.splice(idx, 1);
-            if (!state.customTasks) state.customTasks = [];
-            state.customTasks.push({ id: task.id, text: task.text, date: null, timeSlot: 'morning', timeExact: null, repeat: 'none', done: false });
-            save(state);
-            toast('Задача возвращена в список');
-            document.querySelector('.modal-overlay')?.remove();
-            render();
-        }
-    };
-
-    window.markMatrixDone = function(id) {
-        const idx = state.matrixTasks.findIndex(t => t.id === id);
-        if (idx > -1) {
-            state.matrixTasks.splice(idx, 1);
-            save(state);
-            toast('✅ Задача выполнена!');
-            document.querySelector('.modal-overlay')?.remove();
-            render();
-        }
-    };
-
-    window.saveWeekPlan = function() {
-        toast('План на неделю сохранён! Переход к календарю...');
-        // Здесь будет переход на шаг 4 (календарь с авторизацией)
-        state.currentStep = 4;
-        render();
-    };
-
-    // ===== ЗАПУСК =====
-    if (!state.harada) state.currentStep = 1;
-    else if (state.selectedDirections.length === 0) state.currentStep = 2;
-    else if (state.currentStep === 3.5 || state.currentStep === 4) state.currentStep = 3.5;
-    else state.currentStep = 3;
+  window.addCustomTask = function() {
+    const text = document.getElementById('customText').value.trim();
+    if (!text) return toast('Введите название');
+    const day = parseInt(document.getElementById('customDay').value) || null;
+    const timeSlot = document.getElementById('customTime').value || 'morning';
+    const exactTime = document.getElementById('customExactTime').value || null;
+    const repeat = document.getElementById('customRepeat').value || 'none';
+    if (!state.customTasks) state.customTasks = [];
+    state.customTasks.push({ id: uid(), text, date: day, timeSlot, exactTime, repeat, done: false });
+    save(state);
+    toast('Задача добавлена');
     render();
+  };
+
+  window.finishStep3 = function() {
+    const cb = document.querySelector('.action-check-single');
+    if (cb) {
+      const id = cb.dataset.id;
+      if (cb.checked && !state.actionsChosen.includes(id)) state.actionsChosen.push(id);
+      else if (!cb.checked && state.actionsChosen.includes(id)) state.actionsChosen = state.actionsChosen.filter(item => item !== id);
+      save(state);
+    }
+    toast(`Выбрано ${state.actionsChosen.length} задач`);
+    // Инициализация weekPlan
+    initWeekPlan();
+    state.currentStep = 3.5;
+    render();
+  };
+
+  function initWeekPlan() {
+    const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const weekPlan = {};
+    days.forEach(d => { weekPlan[d] = { morning: [], afternoon: [], evening: [] }; });
+    state.weekPlan = weekPlan;
+    save(state);
+  }
+
+  // ============================================================
+  // ШАГ 3.5 (неделя + приоритеты с выбором времени)
+  // ============================================================
+  function renderStep35(container) {
+    const h = state.harada;
+    if (!h) { state.currentStep = 1; render(); return; }
+    const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+    let allActions = [];
+    selectedDirs.forEach(idx => {
+      const dir = h.directions[idx];
+      dir.actions.forEach(a => {
+        if (state.actionsChosen.includes(a.id || a.text) && a.freq !== 'monthly' && a.freq !== 'quarterly') {
+          allActions.push({ ...a, actionId: a.id || a.text });
+        }
+      });
+    });
+    const customSelected = state.customTasks?.filter(t => !t.done) || [];
+
+    // weekPlan инициализирован
+    const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const dayLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    const slots = ['morning', 'afternoon', 'evening'];
+    const slotLabels = { morning: 'Утро', afternoon: 'День', evening: 'Вечер' };
+
+    // Построить карту
+    const daysMap = {};
+    dayKeys.forEach(key => {
+      daysMap[key] = { morning: [], afternoon: [], evening: [] };
+      const plan = state.weekPlan[key] || { morning: [], afternoon: [], evening: [] };
+      Object.keys(plan).forEach(slot => {
+        const ids = plan[slot] || [];
+        ids.forEach(id => {
+          const found = allActions.find(a => a.actionId === id) || customSelected.find(t => t.id === id);
+          if (found) daysMap[key][slot].push(found);
+        });
+      });
+    });
+
+    // Задачи без дня
+    const assigned = new Set();
+    dayKeys.forEach(key => {
+      const plan = state.weekPlan[key] || { morning: [], afternoon: [], evening: [] };
+      Object.values(plan).forEach(arr => arr.forEach(id => assigned.add(id)));
+    });
+    const noDayTasks = [...allActions, ...customSelected].filter(t => !assigned.has(t.id || t.actionId));
+
+    // Сетка недели
+    let weekHtml = `<div class="week-grid">`;
+    dayKeys.forEach((key, idx) => {
+      const slotsData = daysMap[key];
+      weekHtml += `<div class="week-cell"><div class="day-label">${dayLabels[idx]}</div>`;
+      slots.forEach(slot => {
+        const tasks = slotsData[slot] || [];
+        weekHtml += `<div class="slot-label">${slotLabels[slot]}:</div>`;
+        if (tasks.length === 0) {
+          weekHtml += `<div style="font-size:11px; color:#bbb;">—</div>`;
+        } else {
+          tasks.forEach(t => {
+            weekHtml += `<div class="task-item">${t.text} <span class="del" onclick="removeFromDay('${t.id || t.actionId}','${key}','${slot}')">✕</span></div>`;
+          });
+        }
+      });
+      weekHtml += `</div>`;
+    });
+    weekHtml += `</div>`;
+
+    // Блок задач без дня
+    let noDayHtml = '';
+    if (noDayTasks.length > 0) {
+      noDayHtml = `
+        <div style="margin-top:16px; border-top:1px solid #d4d0c8; padding-top:12px;">
+          <div style="font-weight:600;">⚠️ Задачи без дня (${noDayTasks.length})</div>
+          <div style="font-size:13px; color:#7a756f;">Назначь день и время или отправь в приоритеты.</div>
+          ${noDayTasks.map(t => `
+            <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #f0ede7; flex-wrap:wrap;">
+              <span style="min-width:80px;">${t.text}</span>
+              <select onchange="assignTask('${t.id || t.actionId}', this.value, document.getElementById('slot_${t.id || t.actionId}').value)">
+                <option value="">День</option>
+                ${dayKeys.map((dk, i) => `<option value="${dk}">${dayLabels[i]}</option>`).join('')}
+              </select>
+              <select id="slot_${t.id || t.actionId}">
+                <option value="morning">Утро</option>
+                <option value="afternoon">День</option>
+                <option value="evening">Вечер</option>
+              </select>
+              <button class="btn btn-sm btn-rose" onclick="sendToMatrix('${t.id || t.actionId}')">📊 В приоритеты</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    let html = `
+      <div class="card">
+        <h2>📅 Твоя неделя</h2>
+        <div class="help-text">Задачи распределены по дням и времени. Ты можешь редактировать.</div>
+        ${weekHtml}
+        ${noDayHtml}
+        <div style="margin-top:16px;">
+          <button class="btn btn-gold" onclick="openMatrixModal()">❓ Приоритеты (важно/срочно)</button>
+        </div>
+        <button class="btn btn-block" style="margin-top:16px;" onclick="saveWeekPlan()">✅ Сохранить план на неделю</button>
+      </div>
+    `;
+    container.innerHTML = html;
+  }
+
+  // ===== ФУНКЦИИ ДЛЯ ШАГА 3.5 =====
+  window.assignTask = function(actionId, dayKey, slot) {
+    if (!dayKey || !slot) return toast('Выберите день и время');
+    if (!state.weekPlan) {
+      const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+      state.weekPlan = {};
+      days.forEach(d => { state.weekPlan[d] = { morning: [], afternoon: [], evening: [] }; });
+    }
+    if (!state.weekPlan[dayKey]) state.weekPlan[dayKey] = { morning: [], afternoon: [], evening: [] };
+    // Удаляем из всех других слотов
+    Object.keys(state.weekPlan).forEach(k => {
+      Object.keys(state.weekPlan[k]).forEach(s => {
+        state.weekPlan[k][s] = state.weekPlan[k][s].filter(id => id !== actionId);
+      });
+    });
+    state.weekPlan[dayKey][slot].push(actionId);
+    save(state);
+    toast(`Задача добавлена в ${dayKey}, ${slot}`);
+    render();
+  };
+
+  window.removeFromDay = function(actionId, dayKey, slot) {
+    if (state.weekPlan && state.weekPlan[dayKey] && state.weekPlan[dayKey][slot]) {
+      state.weekPlan[dayKey][slot] = state.weekPlan[dayKey][slot].filter(id => id !== actionId);
+      save(state);
+      render();
+    }
+  };
+
+  window.sendToMatrix = function(actionId) {
+    const h = state.harada;
+    let task = null;
+    if (h) {
+      for (let dir of h.directions) {
+        for (let a of dir.actions) {
+          if ((a.id || a.text) === actionId) {
+            task = { id: actionId, text: a.text, quadrant: 'plan' };
+            break;
+          }
+        }
+        if (task) break;
+      }
+    }
+    if (!task) {
+      const custom = state.customTasks?.find(t => t.id === actionId);
+      if (custom) task = { id: actionId, text: custom.text, quadrant: 'plan' };
+    }
+    if (!task) { toast('Задача не найдена'); return; }
+    if (!state.matrixTasks) state.matrixTasks = [];
+    if (!state.matrixTasks.find(t => t.id === actionId)) state.matrixTasks.push(task);
+    // Удаляем из недели
+    if (state.weekPlan) {
+      Object.keys(state.weekPlan).forEach(k => {
+        Object.keys(state.weekPlan[k]).forEach(s => {
+          state.weekPlan[k][s] = state.weekPlan[k][s].filter(id => id !== actionId);
+        });
+      });
+    }
+    save(state);
+    toast('Задача отправлена в приоритеты');
+    render();
+  };
+
+  window.openMatrixModal = function() {
+    const tasks = state.matrixTasks || [];
+    if (tasks.length === 0) { toast('В приоритетах пока нет задач'); return; }
+    const quadrants = {
+      now: { label: '🔥 Сделать сейчас', color: '#d4edda' },
+      plan: { label: '📅 Запланировать', color: '#fff3cd' },
+      minute: { label: '⚡ Задания на минуту', color: '#f8d7da' },
+      joy: { label: '🎁 Для себя и радости', color: '#e2e3e5' }
+    };
+    let html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">`;
+    Object.keys(quadrants).forEach(key => {
+      const q = quadrants[key];
+      const items = tasks.filter(t => t.quadrant === key);
+      html += `
+        <div style="background:${q.color}; border-radius:8px; padding:10px; min-height:80px;">
+          <div style="font-weight:600; font-size:14px;">${q.label}</div>
+          ${items.map(t => `
+            <div class="matrix-task">
+              <span>${t.text}</span>
+              <div class="actions">
+                <button onclick="moveTaskFromMatrix('${t.id}')">↩️ В неделю</button>
+                <button onclick="markMatrixDone('${t.id}')">✅ Выполнено</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    });
+    html += `</div>`;
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+        <h3>📊 Приоритеты</h3>
+        ${html}
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  window.moveTaskFromMatrix = function(id) {
+    const idx = state.matrixTasks.findIndex(t => t.id === id);
+    if (idx > -1) {
+      const task = state.matrixTasks[idx];
+      state.matrixTasks.splice(idx, 1);
+      if (!state.customTasks) state.customTasks = [];
+      state.customTasks.push({ id: task.id, text: task.text, date: null, timeSlot: 'morning', exactTime: null, repeat: 'none', done: false });
+      save(state);
+      toast('Задача возвращена в список');
+      document.querySelector('.modal-overlay')?.remove();
+      render();
+    }
+  };
+
+  window.markMatrixDone = function(id) {
+    const idx = state.matrixTasks.findIndex(t => t.id === id);
+    if (idx > -1) {
+      state.matrixTasks.splice(idx, 1);
+      save(state);
+      toast('✅ Задача выполнена!');
+      document.querySelector('.modal-overlay')?.remove();
+      render();
+    }
+  };
+
+  window.saveWeekPlan = function() {
+    toast('План сохранён! Переход к календарю...');
+    state.currentStep = 4;
+    render();
+  };
+
+  // ===== ЗАПУСК =====
+  if (!state.harada) state.currentStep = 1;
+  else if (state.selectedDirections.length === 0) state.currentStep = 2;
+  else if (state.currentStep === 3.5 || state.currentStep === 4) state.currentStep = 3.5;
+  else state.currentStep = 3;
+  render();
 </script>
 </body>
 </html>
