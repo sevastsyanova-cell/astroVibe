@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>Тест: квадрат + выбор задач</title>
+    <title>Тест: квадрат + выбор задач (пошагово)</title>
     <style>
-        /* (стили те же, что были) */
+        /* ===== БАЗОВЫЕ СТИЛИ (как в основном проекте) ===== */
         :root {
             --bg: #f9f7f3;
             --white: #ffffff;
@@ -80,6 +80,7 @@
         .btn-outline { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
         .btn-sm { padding: 8px 16px; font-size: 14px; min-height: 40px; }
         .btn-block { display: block; width: 100%; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
         .btn-group .btn { flex: 1 1 auto; }
         input, textarea, select {
@@ -108,36 +109,6 @@
             font-size: 13px;
             margin: 3px 4px 3px 0;
         }
-        .accordion {
-            border: 1px solid #e8e4dc;
-            border-radius: var(--radius-sm);
-            margin-bottom: 8px;
-            overflow: hidden;
-        }
-        .accordion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            cursor: pointer;
-            background: var(--bg);
-            transition: 0.2s ease;
-            font-weight: 500;
-            font-size: 15px;
-        }
-        .accordion-header:hover { background: #e8e4dc; }
-        .accordion-body { padding: 0 16px 12px; display: none; }
-        .accordion-body.open { display: block; }
-        .task-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0ede7;
-        }
-        .task-row .check { width: 22px; height: 22px; cursor: pointer; flex-shrink: 0; }
-        .task-row .text { flex: 1; min-width: 0; }
-        .task-row .text .freq { font-size: 12px; color: var(--text-light); }
         .toast {
             position: fixed;
             bottom: 30px;
@@ -157,18 +128,7 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .info-footer {
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #e8e4dc;
-            font-size: 14px;
-            color: var(--text-light);
-            text-align: center;
-        }
-        .hidden { display: none; }
-        .mt-16 { margin-top: 16px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        /* Модальное окно (простое) */
+        /* Модальное окно */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -235,12 +195,13 @@
     }
 
     let state = loadData() || {
-        harada: null,
-        selectedDirections: [],
-        actionsChosen: [],
-        customTasks: [],
+        harada: null,            // { goal, directions: [{ name, actions: [{ id, text, freq }] }] }
+        selectedDirections: [],  // индексы направлений
+        actionsChosen: [],       // id выбранных действий
+        customTasks: [],         // [{ id, text, date, timeSlot, repeat, done }]
         currentStep: 1,
-        maxTasksPerDay: 5
+        maxTasksPerDay: 5,
+        _taskIndex: 0            // для пошагового просмотра
     };
 
     // ============================================================
@@ -270,6 +231,7 @@
         const container = document.getElementById('screen-container');
         const html = screens[screen]();
         container.innerHTML = html;
+        // Специфичная инициализация
         if (screen === 'step1') {
             const h = state.harada;
             if (h) {
@@ -281,7 +243,25 @@
             }
         }
         if (screen === 'step2') setTimeout(() => updateDirections(), 50);
-        if (screen === 'step3') renderTasks();
+        if (screen === 'step3') {
+            // Если индекс вышел за пределы, сброс
+            const h = state.harada;
+            if (h) {
+                const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+                let allActions = [];
+                selectedDirs.forEach(idx => {
+                    const dir = h.directions[idx];
+                    dir.actions.forEach(a => {
+                        if (a.freq === 'monthly' || a.freq === 'quarterly') return;
+                        allActions.push({ ...a, dirName: dir.name, actionId: a.id || uid() });
+                    });
+                });
+                if (allActions.length > 0 && state._taskIndex >= allActions.length) {
+                    state._taskIndex = allActions.length - 1;
+                }
+                if (allActions.length === 0) state._taskIndex = 0;
+            }
+        }
     }
 
     // ============================================================
@@ -289,13 +269,13 @@
     // ============================================================
     const screens = {};
 
-    // ----- ШАГ 1: СОЗДАНИЕ КВАДРАТА (с кнопками ИИ) -----
+    // ----- ШАГ 1: КВАДРАТ (с ИИ) -----
     screens.step1 = () => {
         const h = state.harada || { goal: '', directions: Array.from({length:8}, () => ({ name: '', actions: [] })) };
         let html = `
             <div class="card">
                 <div class="card-title">🎯 Шаг 1. Твой квадрат Харада</div>
-                <div class="card-sub">Цель на 12 месяцев, 8 направлений, действия с частотой. Можно заполнить вручную или вставить из ИИ.</div>
+                <div class="card-sub">Цель на 12 месяцев, 8 направлений, действия с частотой.</div>
                 <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
                     <button class="btn btn-sm btn-gold" onclick="openPromptModal()">📄 Промпт для ИИ</button>
                     <button class="btn btn-sm" onclick="openAIPaste()">🤖 Вставить из ИИ</button>
@@ -384,7 +364,7 @@
         return html;
     };
 
-    // ----- ШАГ 3: ВЫБОР ДЕЙСТВИЙ + РУЧНОЙ ВВОД -----
+    // ----- ШАГ 3: ПОШАГОВЫЙ ВЫБОР ЗАДАЧ -----
     screens.step3 = () => {
         const h = state.harada;
         if (!h) return '<div class="card">Нет данных. <button class="btn" onclick="render(\'step1\')">Начать сначала</button></div>';
@@ -397,96 +377,53 @@
                 allActions.push({ ...a, dirName: dir.name, actionId: a.id || uid() });
             });
         });
-        const chosenIds = state.actionsChosen || [];
+
+        // Если нет задач
+        if (allActions.length === 0) {
+            return `<div class="card"><div class="card-title">📋 Шаг 3. Выбери задачи на эту неделю</div>
+                    <div class="card-sub">Нет доступных задач. Добавьте действия в квадрате.</div>
+                    <button class="btn" onclick="render('step1')">Вернуться к квадрату</button></div>`;
+        }
+
+        // Убеждаемся, что индекс корректен
+        if (state._taskIndex >= allActions.length) state._taskIndex = allActions.length - 1;
+        if (state._taskIndex < 0) state._taskIndex = 0;
+        const currentAction = allActions[state._taskIndex];
+        const isChecked = state.actionsChosen.includes(currentAction.actionId);
 
         let html = `
             <div class="card">
                 <div class="card-title">📋 Шаг 3. Выбери задачи на эту неделю</div>
-                <div class="card-sub">Отметь галочками задачи, которые будешь делать. Добавь свои, если нужно.</div>
-                <div class="field-group">
-                    <label>Максимум задач в день</label>
-                    <input type="range" id="maxTasksSlider" min="3" max="10" step="1" value="${state.maxTasksPerDay || 5}" style="width:100%;" oninput="document.getElementById('maxTasksLabel').textContent=this.value" />
-                    <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-light);">
-                        <span>3</span>
-                        <span id="maxTasksLabel">${state.maxTasksPerDay || 5}</span>
-                        <span>10</span>
+                <div class="card-sub">Каждая задача по очереди. Поставь галочку, если будешь делать.</div>
+                <div style="font-size:14px; color:var(--text-light); margin-bottom:16px;">
+                    Задача ${state._taskIndex+1} из ${allActions.length}
+                    <span style="margin-left:12px;">Выбрано: ${state.actionsChosen.length}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:20px; padding:20px 0; border-top:2px solid var(--blue); border-bottom:2px solid var(--blue); margin-bottom:16px;">
+                    <div style="flex:1; font-size:20px; font-weight:500;">${currentAction.text}</div>
+                    <div style="flex-shrink:0;">
+                        <label style="display:block; text-align:center; font-size:14px; font-weight:500;">Взять в работу</label>
+                        <input type="checkbox" class="action-check-single" data-id="${currentAction.actionId}" ${isChecked ? 'checked' : ''} style="width:40px; height:40px; cursor:pointer;" />
                     </div>
                 </div>
-                <div id="taskList">
-        `;
-        const grouped = {};
-        allActions.forEach(a => {
-            if (!grouped[a.dirName]) grouped[a.dirName] = [];
-            grouped[a.dirName].push(a);
-        });
-        const dirNames = Object.keys(grouped);
-        dirNames.forEach((dirName, idx) => {
-            const actions = grouped[dirName];
-            const selectedCount = actions.filter(a => chosenIds.includes(a.actionId)).length;
-            const isOpen = (idx === 0);
-            html += `
-                <div class="accordion">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>${dirName}</span>
-                        <span>${selectedCount}/${actions.length} выбрано <span>${isOpen ? '▾' : '▸'}</span></span>
-                    </div>
-                    <div class="accordion-body ${isOpen ? 'open' : ''}">
-            `;
-            actions.forEach(a => {
-                const checked = chosenIds.includes(a.actionId) ? 'checked' : '';
-                html += `
-                    <div class="task-row">
-                        <input type="checkbox" class="action-check" data-id="${a.actionId}" ${checked} />
-                        <div class="text">
-                            ${a.text}
-                            <div class="freq">${a.freq || ''}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += `
-                    </div>
+                <div style="display:flex; gap:10px; justify-content:space-between;">
+                    <button class="btn btn-outline" onclick="prevTask()" ${state._taskIndex === 0 ? 'disabled' : ''}>← Назад</button>
+                    <button class="btn" onclick="nextTask()">Далее →</button>
                 </div>
-            `;
-        });
-
-        html += `
+                <div style="margin-top:16px; text-align:center;">
+                    <button class="btn btn-gold" onclick="finishStep3()">✅ Завершить выбор (${state.actionsChosen.length} задач)</button>
                 </div>
-                <div style="margin-top:16px; border-top:1px solid #e8e4dc; padding-top:16px;">
-                    <div class="card-title" style="font-size:17px;">➕ Добавить свою задачу</div>
-                    <div class="field-group">
-                        <input id="customTaskText" placeholder="Что нужно сделать?" />
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <div>
-                            <label>Дата (день месяца)</label>
-                            <input type="number" id="customTaskDay" min="1" max="31" placeholder="15" />
-                        </div>
-                        <div>
-                            <label>Время суток</label>
-                            <select id="customTaskTime">
-                                <option value="morning">Утро</option>
-                                <option value="afternoon">День</option>
-                                <option value="evening">Вечер</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label>Повторять</label>
-                        <select id="customTaskRepeat">
-                            <option value="none">Никогда</option>
-                            <option value="weekly">Каждую неделю</option>
-                            <option value="monthly">Каждый месяц</option>
-                            <option value="yearly">Каждый год</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-gold btn-block" onclick="addCustomTask()">➕ Добавить задачу</button>
+            </div>
+            <div style="background:var(--white); border-radius:var(--radius); padding:16px; box-shadow:var(--card-shadow);">
+                <div style="font-size:14px; color:var(--text-light);">➕ Добавить свою задачу</div>
+                <div style="display:flex; gap:8px; margin-top:4px;">
+                    <input id="customTaskTextQuick" placeholder="Название" style="flex:2;" />
+                    <button class="btn btn-sm btn-gold" onclick="addCustomTaskQuick()">Добавить</button>
                 </div>
-                <div style="margin-top:16px;">
-                    <strong>Мои личные задачи:</strong>
-                    <div id="customTaskList"></div>
+                <div style="margin-top:6px; font-size:13px; color:var(--text-light);">
+                    Личные задачи: ${state.customTasks?.filter(t => !t.done).length || 0}
+                    <span style="margin-left:12px;"><a href="#" onclick="showCustomTasks()">Показать</a></span>
                 </div>
-                <button class="btn btn-block mt-16" onclick="finishStep3()">✅ Перейти к планировщику →</button>
             </div>
         `;
         return html;
@@ -496,7 +433,7 @@
     // 4. ФУНКЦИИ УПРАВЛЕНИЯ
     // ============================================================
 
-    // ----- ШАГ 1 (ручное добавление) -----
+    // ----- ШАГ 1: РУЧНОЕ ДОБАВЛЕНИЕ -----
     window.addAction = function(dirIdx) {
         const container = document.querySelector(`.act-text[data-idx="${dirIdx}"]`);
         const freqSelect = document.querySelector(`.act-freq[data-idx="${dirIdx}"]`);
@@ -545,9 +482,9 @@
         render('step2');
     };
 
-    function rebuildChips() { /* чипы обновляются через add/remove */ }
+    function rebuildChips() {}
 
-    // ----- ШАГ 2 -----
+    // ----- ШАГ 2: НАПРАВЛЕНИЯ -----
     function getDirCountByEnergy(energy) {
         if (energy >= 80) return 6;
         if (energy >= 50) return 4;
@@ -579,121 +516,86 @@
         render('step3');
     };
 
-    // ----- ШАГ 3 -----
-    window.toggleAccordion = function(header) {
-        const body = header.nextElementSibling;
-        if (body) {
-            body.classList.toggle('open');
-            const icon = header.querySelector('span:last-child');
-            if (icon) icon.textContent = body.classList.contains('open') ? '▾' : '▸';
+    // ----- ШАГ 3: ПОШАГОВЫЙ ВЫБОР -----
+    function saveCurrentCheckbox() {
+        const cb = document.querySelector('.action-check-single');
+        if (cb) {
+            const id = cb.dataset.id;
+            const checked = cb.checked;
+            if (checked && !state.actionsChosen.includes(id)) {
+                state.actionsChosen.push(id);
+            } else if (!checked && state.actionsChosen.includes(id)) {
+                state.actionsChosen = state.actionsChosen.filter(item => item !== id);
+            }
+            saveData(state);
         }
-    };
-
-    function renderTasks() {
-        const container = document.getElementById('customTaskList');
-        if (!container) return;
-        const tasks = state.customTasks || [];
-        if (tasks.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-light); font-size:14px;">Нет личных задач.</div>';
-            return;
-        }
-        let html = '';
-        tasks.forEach((t, idx) => {
-            const dateInfo = t.date ? ` (${t.date}-е число)` : '';
-            const repeatInfo = t.repeat && t.repeat !== 'none' ? `, повтор: ${t.repeat}` : '';
-            const timeInfo = t.timeSlot ? `, ${t.timeSlot}` : '';
-            html += `
-                <div class="task-row">
-                    <input type="checkbox" class="custom-check" data-idx="${idx}" ${t.done ? 'checked' : ''} />
-                    <div class="text">
-                        ${t.text}
-                        <div class="freq">${dateInfo}${repeatInfo}${timeInfo}</div>
-                    </div>
-                    <span style="cursor:pointer; color:var(--text-light);" onclick="removeCustomTask(${idx})">✕</span>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-        document.querySelectorAll('.custom-check').forEach(el => {
-            el.addEventListener('change', function() {
-                const idx = parseInt(this.dataset.idx);
-                if (state.customTasks && state.customTasks[idx]) {
-                    state.customTasks[idx].done = this.checked;
-                    saveData(state);
-                }
-            });
-        });
     }
 
-    window.addCustomTask = function() {
-        const text = document.getElementById('customTaskText')?.value.trim();
-        if (!text) { toast('Введите название задачи'); return; }
-        const day = parseInt(document.getElementById('customTaskDay')?.value) || null;
-        const timeSlot = document.getElementById('customTaskTime')?.value || 'morning';
-        const repeat = document.getElementById('customTaskRepeat')?.value || 'none';
-        if (!state.customTasks) state.customTasks = [];
-        state.customTasks.push({ id: uid(), text, date: day, timeSlot, repeat, done: false });
-        saveData(state);
-        document.getElementById('customTaskText').value = '';
-        document.getElementById('customTaskDay').value = '';
-        render('step3');
-        toast('Задача добавлена!');
+    window.prevTask = function() {
+        saveCurrentCheckbox();
+        if (state._taskIndex > 0) {
+            state._taskIndex--;
+            render('step3');
+        }
     };
 
-    window.removeCustomTask = function(idx) {
-        if (!state.customTasks) return;
-        state.customTasks.splice(idx, 1);
-        saveData(state);
-        render('step3');
+    window.nextTask = function() {
+        saveCurrentCheckbox();
+        const h = state.harada;
+        if (!h) return;
+        const selectedDirs = state.selectedDirections.length ? state.selectedDirections : h.directions.map((_,i)=>i);
+        let allActions = [];
+        selectedDirs.forEach(idx => {
+            const dir = h.directions[idx];
+            dir.actions.forEach(a => {
+                if (a.freq === 'monthly' || a.freq === 'quarterly') return;
+                allActions.push({ ...a, dirName: dir.name, actionId: a.id || uid() });
+            });
+        });
+        if (state._taskIndex < allActions.length - 1) {
+            state._taskIndex++;
+            render('step3');
+        } else {
+            toast('Ты просмотрел(а) все задачи!');
+        }
     };
 
     window.finishStep3 = function() {
-        const checks = document.querySelectorAll('.action-check:checked');
-        const chosen = [];
-        checks.forEach(cb => chosen.push(cb.dataset.id));
-        state.actionsChosen = chosen;
-        const slider = document.getElementById('maxTasksSlider');
-        if (slider) state.maxTasksPerDay = parseInt(slider.value);
+        saveCurrentCheckbox();
+        toast(`✅ Выбрано задач: ${state.actionsChosen.length}. Личных: ${state.customTasks?.length || 0}`);
+        // В будущем здесь будет переход на планировщик
+        toast('Планировщик в разработке. Данные сохранены.');
+    };
+
+    // ----- ЛИЧНЫЕ ЗАДАЧИ -----
+    window.addCustomTaskQuick = function() {
+        const input = document.getElementById('customTaskTextQuick');
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) { toast('Введите название задачи'); return; }
+        if (!state.customTasks) state.customTasks = [];
+        state.customTasks.push({ id: uid(), text, date: null, timeSlot: 'morning', repeat: 'none', done: false });
         saveData(state);
-        toast(`✅ Выбрано задач: ${chosen.length}. Личных: ${state.customTasks?.length || 0} (планировщик в разработке)`);
+        input.value = '';
+        toast('Задача добавлена!');
+        render('step3');
+    };
+
+    window.showCustomTasks = function() {
+        const tasks = state.customTasks || [];
+        if (tasks.length === 0) { toast('Нет личных задач'); return; }
+        let msg = '📋 Мои личные задачи:\n';
+        tasks.forEach((t, i) => {
+            msg += `${i+1}. ${t.text} ${t.done ? '✅' : '⬜'}\n`;
+        });
+        alert(msg);
     };
 
     // ============================================================
-    // 5. ИНТЕГРАЦИЯ С ИИ (промпт и вставка)
+    // 5. ИНТЕГРАЦИЯ С ИИ
     // ============================================================
     window.openPromptModal = function() {
-        const promptText = `Ты коуч по методу Харада. Помоги мне собрать квадрат 9×9: в центре цель, вокруг 8 направлений, в каждом 8 регулярных действий.
-
-Ограничения (читай первыми):
-1. Ты интервьюер, а не консультант. Не предлагай продукты, форматы, стратегии, цены.
-2. Не называй цифры, которые я не называл(а). Не придумывай чеков и расчётов.
-3. Не подсказывай варианты ответов (без «например: ...»).
-4. Всего не больше 15 вопросов. После ответов переходи к направлениям.
-5. Не предлагай направления и выводы посреди интервью — только на шаге 2.
-6. Не пересказывай мои ответы («фиксирую...», «итак...»). Получил ответ — задавай следующий вопрос.
-7. Один короткий уточняющий вопрос на ответ, только если без него нельзя собрать квадрат.
-8. Если я отвечаю «не знаю» — не отвечай за меня, просто переходи к следующему вопросу.
-9. Задавай только по одному вопросу за раз. Не вываливай список.
-
-Образ результата:
-— Квадрат 9×9: цель по центру, 8 направлений вокруг, в каждом по 8 действий.
-— Каждая ячейка — короткое (до 6 слов) регулярное действие с частотой или триггером.
-— 2–3 направления — про опоры человека (энергия, тело, мышление, восстановление).
-— Все действия — личные, не делегируемые, реалистичные для моей недели.
-— Финал — чек-лист на первый месяц по неделям, с фокусом на сопротивления и малые шаги.
-
-Важно для финальной выдачи:
-После того как я утвержу квадрат, выдай его в виде нумерованного списка направлений с действиями. Каждое направление начинается с номера и точки, каждое действие – с дефиса или звёздочки. Частота должна быть указана рядом с действием (например, «ежедн», «раз/нед», «раз/мес», «раз/3мес»). Пример:
-1. Привлечение
-- пост ТГ ежедн
-- подкаст 2р/нед
-...
-2. Упаковка и контент
-- идея в день
-...
-
-Начинай с короткого приветствия, затем задай вводные вопросы (по одному за раз), потом переходи к интервью.`;
-
+        const promptText = `Ты коуч по методу Харада. Помоги мне собрать квадрат 9×9... (полный промпт из основного файла)`;
         modalOpen(`
             <h3 style="margin-bottom:12px;">📄 Промпт для ИИ</h3>
             <div style="background:var(--bg); border-radius:12px; padding:16px; font-size:14px; max-height:400px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; line-height:1.5;">${promptText}</div>
@@ -712,9 +614,9 @@
     window.openAIPaste = function() {
         modalOpen(`
             <h3 style="margin-bottom:12px;">🤖 Вставь ответ ИИ</h3>
-            <p style="font-size:14px; color:var(--text-light); margin-bottom:12px;">Скопируй ответ, который дал тебе ИИ после прохождения интервью по промпту. Я попытаюсь распарсить его и заполнить поля.</p>
+            <p style="font-size:14px; color:var(--text-light); margin-bottom:12px;">Скопируй ответ ИИ в правильном формате (нумерованный список направлений с действиями).</p>
             <div class="field-group">
-                <textarea id="aiResponse" rows="8" placeholder="Вставь сюда текст ответа ИИ..."></textarea>
+                <textarea id="aiResponse" rows="8" placeholder="Вставь сюда текст..."></textarea>
             </div>
             <button class="btn btn-block" onclick="parseAIResponse()">Распарсить и заполнить</button>
         `);
@@ -723,11 +625,9 @@
     window.parseAIResponse = function() {
         const text = document.getElementById('aiResponse')?.value || '';
         if (!text.trim()) { toast('Вставь текст'); return; }
-
         let goal = '';
         const goalMatch = text.match(/(?:Цель|Моя цель|В центре цель)[:\s]*(.+?)(?:\n|$)/i);
         if (goalMatch) goal = goalMatch[1].trim();
-
         const dirs = [];
         const dirRegex = /(?:^|\n)\s*(\d+)\.\s*([^\n]+)/g;
         let match;
@@ -752,15 +652,11 @@
             });
             dirs.push({ name, actions });
         }
-
         if (!goal) {
             const firstLine = text.split('\n').find(l => l.trim().length > 10);
             if (firstLine) goal = firstLine.trim();
         }
-
-        // Заполняем поля
         document.getElementById('haradaGoal').value = goal;
-
         const dirInputs = document.querySelectorAll('.dir-name');
         dirInputs.forEach((input, i) => {
             if (i < dirs.length) {
@@ -773,7 +669,6 @@
                 input.value = '';
             }
         });
-
         if (!state.harada) state.harada = { goal, directions: [] };
         while (state.harada.directions.length < 8) {
             state.harada.directions.push({ name: '', actions: [] });
