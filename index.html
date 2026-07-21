@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Навигатор квадрата Харада</title>
   <style>
-    /* ===== ОБНОВЛЁННЫЙ CSS (тёплый, приятный) ===== */
+    /* ===== CSS (полный, как в последней рабочей версии) ===== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', -apple-system, Roboto, 'Helvetica Neue', sans-serif;
@@ -208,7 +208,7 @@
 
 <script>
   // ===== ХРАНИЛИЩЕ =====
-  const STORAGE_KEY = 'harada_final_v5';
+  const STORAGE_KEY = 'harada_final_v7';
   function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } }
   function save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
@@ -443,6 +443,7 @@
       </div>
     `;
     document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
   };
 
   window.openAIPaste = function() {
@@ -457,6 +458,7 @@
       </div>
     `;
     document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
     setTimeout(() => document.getElementById('aiResponse')?.focus(), 100);
   };
 
@@ -1082,7 +1084,6 @@
       minute: { label: '⚡ Задания на минуту', color: '#f8d7da' },
       joy: { label: '🎁 Для себя и радости', color: '#e2e3e5' }
     };
-    // Считаем количество задач в каждом квадранте
     const counts = { now: 0, plan: 0, minute: 0, joy: 0 };
     tasks.forEach(t => { if (counts.hasOwnProperty(t.quadrant)) counts[t.quadrant]++; });
 
@@ -1126,6 +1127,7 @@
       </div>
     `;
     document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
   };
 
   window.changeTaskQuadrant = function(id, newQuadrant) {
@@ -1174,7 +1176,9 @@
     render();
   };
 
-  // ===== ЗАПУСК =====
+  // ============================================================
+  // ЗАПУСК
+  // ============================================================
   if (!state.harada) state.currentStep = 1;
   else if (state.selectedDirections.length === 0) state.currentStep = 2;
   else if (state.currentStep === 3.5 || state.currentStep === 4) state.currentStep = 3.5;
