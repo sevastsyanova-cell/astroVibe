@@ -32,7 +32,8 @@
     .task-item { background: white; border-radius: 4px; padding: 2px 6px; margin: 2px 0; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
     .task-item .del { color: #7a756f; cursor: pointer; }
     .matrix-task { background: white; border-radius: 4px; padding: 4px 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-    .matrix-task .actions { display: flex; gap: 6px; }
+    .matrix-task .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .matrix-task .actions select { font-size: 12px; padding: 2px 6px; border-radius: 6px; border: 1px solid #ccc; }
     .matrix-task .actions button { background: none; border: none; cursor: pointer; font-size: 16px; }
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 30px; z-index: 999; display: none; }
     .toast.show { display: block; }
@@ -45,7 +46,7 @@
 
 <script>
   // ===== ХРАНИЛИЩЕ =====
-  const STORAGE_KEY = 'harada_final_v1';
+  const STORAGE_KEY = 'harada_final_v3';
   function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } }
   function save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
@@ -511,7 +512,7 @@
       `;
     }
 
-    // Добавление своей задачи
+    // Добавление своей задачи (с месяцем)
     let customHtml = `
       <div style="margin-top:20px; border-top:1px solid #d4d0c8; padding-top:12px;">
         <div style="font-weight:600;">➕ Добавить свою задачу</div>
@@ -520,7 +521,13 @@
           <button class="btn btn-sm btn-gold" onclick="addCustomTask()">+</button>
         </div>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <input type="number" id="customDay" min="1" max="31" placeholder="День месяца" style="width:80px;" />
+          <input type="number" id="customDay" min="1" max="31" placeholder="День" style="width:70px;" />
+          <select id="customMonth" style="width:100px;">
+            <option value="0">Янв</option><option value="1">Фев</option><option value="2">Мар</option>
+            <option value="3">Апр</option><option value="4">Май</option><option value="5">Июн</option>
+            <option value="6">Июл</option><option value="7">Авг</option><option value="8">Сен</option>
+            <option value="9">Окт</option><option value="10">Ноя</option><option value="11">Дек</option>
+          </select>
           <select id="customTime"><option value="morning">Утро</option><option value="afternoon">День</option><option value="evening">Вечер</option></select>
           <input type="time" id="customExactTime" placeholder="Точное время" style="width:120px;" />
           <select id="customRepeat"><option value="none">Никогда</option><option value="weekly">Еженедельно</option><option value="monthly">Ежемесячно</option></select>
@@ -546,6 +553,7 @@
           <button class="btn btn-outline" onclick="prevTask()" ${state._taskIndex===0?'disabled':''}>← Назад</button>
           <button class="btn" onclick="nextTask()">Далее →</button>
         </div>
+        <div class="help-text" style="margin-top:12px;">💡 Если не выберешь задачу, она не попадёт в недельный план.</div>
         <button class="btn btn-gold btn-block" style="margin-top:16px;" onclick="finishStep3()">✅ Завершить выбор (${state.actionsChosen.length} задач)</button>
         ${longHtml}
         ${customHtml}
@@ -630,11 +638,12 @@
     const text = document.getElementById('customText').value.trim();
     if (!text) return toast('Введите название');
     const day = parseInt(document.getElementById('customDay').value) || null;
+    const month = parseInt(document.getElementById('customMonth').value) || null;
     const timeSlot = document.getElementById('customTime').value || 'morning';
     const exactTime = document.getElementById('customExactTime').value || null;
     const repeat = document.getElementById('customRepeat').value || 'none';
     if (!state.customTasks) state.customTasks = [];
-    state.customTasks.push({ id: uid(), text, date: day, timeSlot, exactTime, repeat, done: false });
+    state.customTasks.push({ id: uid(), text, date: day, month, timeSlot, exactTime, repeat, done: false });
     save(state);
     toast('Задача добавлена');
     render();
@@ -664,7 +673,7 @@
   }
 
   // ============================================================
-  // ШАГ 3.5 (неделя + приоритеты с выбором времени)
+  // ШАГ 3.5 (неделя + приоритеты с выбором квадранта)
   // ============================================================
   function renderStep35(container) {
     const h = state.harada;
@@ -842,19 +851,33 @@
       minute: { label: '⚡ Задания на минуту', color: '#f8d7da' },
       joy: { label: '🎁 Для себя и радости', color: '#e2e3e5' }
     };
-    let html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">`;
+    // Считаем количество задач в каждом квадранте
+    const counts = { now: 0, plan: 0, minute: 0, joy: 0 };
+    tasks.forEach(t => { if (counts.hasOwnProperty(t.quadrant)) counts[t.quadrant]++; });
+
+    let html = `<div style="margin-bottom:12px; display:flex; gap:12px; flex-wrap:wrap;">`;
+    Object.keys(quadrants).forEach(key => {
+      html += `<span style="background:${quadrants[key].color}; padding:4px 12px; border-radius:20px; font-size:13px;">${quadrants[key].label}: ${counts[key]}</span>`;
+    });
+    html += `</div><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">`;
     Object.keys(quadrants).forEach(key => {
       const q = quadrants[key];
       const items = tasks.filter(t => t.quadrant === key);
       html += `
         <div style="background:${q.color}; border-radius:8px; padding:10px; min-height:80px;">
-          <div style="font-weight:600; font-size:14px;">${q.label}</div>
+          <div style="font-weight:600; font-size:14px; margin-bottom:6px;">${q.label}</div>
           ${items.map(t => `
             <div class="matrix-task">
               <span>${t.text}</span>
               <div class="actions">
-                <button onclick="moveTaskFromMatrix('${t.id}')">↩️ В неделю</button>
-                <button onclick="markMatrixDone('${t.id}')">✅ Выполнено</button>
+                <select onchange="changeTaskQuadrant('${t.id}', this.value)" style="font-size:12px; padding:2px 6px; border-radius:6px;">
+                  <option value="now" ${t.quadrant==='now'?'selected':''}>Сейчас</option>
+                  <option value="plan" ${t.quadrant==='plan'?'selected':''}>Запланировать</option>
+                  <option value="minute" ${t.quadrant==='minute'?'selected':''}>На минуту</option>
+                  <option value="joy" ${t.quadrant==='joy'?'selected':''}>Для себя</option>
+                </select>
+                <button onclick="moveTaskFromMatrix('${t.id}')">↩️</button>
+                <button onclick="markMatrixDone('${t.id}')">✅</button>
               </div>
             </div>
           `).join('')}
@@ -874,13 +897,29 @@
     document.body.appendChild(modal);
   };
 
+  window.changeTaskQuadrant = function(id, newQuadrant) {
+    const task = state.matrixTasks.find(t => t.id === id);
+    if (task) {
+      task.quadrant = newQuadrant;
+      save(state);
+      // Обновить модалку без перезагрузки страницы
+      const modal = document.querySelector('.modal-overlay');
+      if (modal) {
+        modal.remove();
+        openMatrixModal();
+      } else {
+        toast('Квадрант изменён');
+      }
+    }
+  };
+
   window.moveTaskFromMatrix = function(id) {
     const idx = state.matrixTasks.findIndex(t => t.id === id);
     if (idx > -1) {
       const task = state.matrixTasks[idx];
       state.matrixTasks.splice(idx, 1);
       if (!state.customTasks) state.customTasks = [];
-      state.customTasks.push({ id: task.id, text: task.text, date: null, timeSlot: 'morning', exactTime: null, repeat: 'none', done: false });
+      state.customTasks.push({ id: task.id, text: task.text, date: null, month: null, timeSlot: 'morning', exactTime: null, repeat: 'none', done: false });
       save(state);
       toast('Задача возвращена в список');
       document.querySelector('.modal-overlay')?.remove();
