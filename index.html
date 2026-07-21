@@ -2252,71 +2252,144 @@
     };
 
     window.parseAIResponse = function() {
-        const text = document.getElementById('aiResponse')?.value || '';
-        if (!text.trim()) { toast('Вставь текст'); return; }
-        let goal = '';
-        const goalMatch = text.match(/(?:Цель|Моя цель|В центре цель)[:\s]*(.+?)(?:\n|$)/i);
-        if (goalMatch) goal = goalMatch[1].trim();
+    const textarea = document.getElementById('aiResponse');
+    const text = textarea?.value || '';
+    if (!text.trim()) { toast('Вставьте текст'); return; }
 
-        const dirs = [];
-        const dirRegex = /(?:^|\n)\s*(\d+)\.\s*([^\n]+)/g;
-        let match;
-        while ((match = dirRegex.exec(text)) !== null) {
-            const num = parseInt(match[1]);
-            const name = match[2].trim();
-            const start = match.index + match[0].length;
-            let end = text.indexOf(`\n${num+1}.`, start);
-            if (end === -1) end = text.length;
-            const block = text.substring(start, end).trim();
-            const actions = [];
-            const actionLines = block.split('\n').filter(l => l.trim().length > 0);
-            actionLines.forEach(line => {
+    // Поиск цели
+    let goal = '';
+    const goalMatch = text.match(/(?:Цель|Моя цель|В центре цель)[:\s]*(.+?)(?:\n|$)/i);
+    if (goalMatch) goal = goalMatch[1].trim();
+    if (!goal) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 10);
+        if (lines.length > 0) goal = lines[0];
+    }
+
+    const dirs = [];
+    // 1. Ищем нумерованные списки
+    const dirRegex = /(?:^|\n)\s*(\d+)\.\s*([^\n]+)/g;
+    let match;
+    while ((match = dirRegex.exec(text)) !== null) {
+        const num = parseInt(match[1]);
+        const name = match[2].trim();
+        const start = match.index + match[0].length;
+        let end = text.indexOf(`\n${num+1}.`, start);
+        if (end === -1) end = text.length;
+        const block = text.substring(start, end).trim();
+        const actions = [];
+        const actionLines = block.split('\n').filter(l => l.trim().length > 0);
+        actionLines.forEach(line => {
+            let freq = 'daily';
+            const lower = line.toLowerCase();
+            if (lower.includes('нед') || lower.includes('еженедельно') || lower.includes('р/нед') || lower.includes('раз/н')) freq = 'weekly';
+            else if (lower.includes('мес') || lower.includes('ежемесячно') || lower.includes('р/мес') || lower.includes('раз/м')) freq = 'monthly';
+            else if (lower.includes('квартал') || lower.includes('3 мес') || lower.includes('р/3мес')) freq = 'quarterly';
+            let clean = line.replace(/^[\s\-•\d.]+/, '').trim();
+            if (clean.length > 3) {
+                actions.push({ id: uid(), text: clean, freq });
+            }
+        });
+        dirs.push({ name, actions });
+    }
+
+    // 2. Если нет нумерации, ищем по ключевым словам
+    if (dirs.length === 0) {
+        const keywords = ['Привлечение', 'Упаковка', 'Продажи', 'Обучение', 'Энергия', 'Восстановление', 'Финансы', 'Мышление'];
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        let currentDir = null;
+        let currentActions = [];
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const isHeader = keywords.some(kw => line.includes(kw) && line.length < 50);
+            if (isHeader) {
+                if (currentDir) {
+                    dirs.push({ name: currentDir, actions: currentActions });
+                }
+                currentDir = line;
+                currentActions = [];
+            } else {
+                if (currentDir) {
+                    let freq = 'daily';
+                    const lower = line.toLowerCase();
+                    if (lower.includes('нед') || lower.includes('еженедельно') || lower.includes('р/нед') || lower.includes('раз/н')) freq = 'weekly';
+                    else if (lower.includes('мес') || lower.includes('ежемесячно') || lower.includes('р/мес') || lower.includes('раз/м')) freq = 'monthly';
+                    else if (lower.includes('квартал') || lower.includes('3 мес') || lower.includes('р/3мес')) freq = 'quarterly';
+                    let clean = line.replace(/^[\s\-•\d.]+/, '').trim();
+                    if (clean.length > 3) {
+                        currentActions.push({ id: uid(), text: clean, freq });
+                    }
+                }
+            }
+        }
+        if (currentDir) {
+            dirs.push({ name: currentDir, actions: currentActions });
+        }
+    }
+
+    // 3. Если ничего не нашли, пробуем разбить по строкам с дефисами
+    if (dirs.length === 0) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+        let currentName = 'Направление';
+        let actions = [];
+        lines.forEach(line => {
+            if (line.match(/^[А-Я][а-я]+/) && !line.includes('-') && !line.includes('•')) {
+                if (actions.length > 0) {
+                    dirs.push({ name: currentName, actions: actions });
+                    actions = [];
+                }
+                currentName = line;
+            } else {
                 let freq = 'daily';
-                if (line.match(/раз в неделю|еженедельно/i)) freq = 'weekly';
-                else if (line.match(/раз в месяц|ежемесячно/i)) freq = 'monthly';
-                else if (line.match(/раз в 3 месяца|квартал/i)) freq = 'quarterly';
+                const lower = line.toLowerCase();
+                if (lower.includes('нед') || lower.includes('еженедельно') || lower.includes('р/нед') || lower.includes('раз/н')) freq = 'weekly';
+                else if (lower.includes('мес') || lower.includes('ежемесячно') || lower.includes('р/мес') || lower.includes('раз/м')) freq = 'monthly';
+                else if (lower.includes('квартал') || lower.includes('3 мес') || lower.includes('р/3мес')) freq = 'quarterly';
                 let clean = line.replace(/^[\s\-•\d.]+/, '').trim();
                 if (clean.length > 3) {
                     actions.push({ id: uid(), text: clean, freq });
                 }
-            });
-            dirs.push({ name, actions });
-        }
-
-        if (!goal) {
-            const firstLine = text.split('\n').find(l => l.trim().length > 10);
-            if (firstLine) goal = firstLine.trim();
-        }
-
-        document.getElementById('haradaGoal').value = goal;
-        const dirInputs = document.querySelectorAll('.dir-name');
-        dirInputs.forEach((input, i) => {
-            if (i < dirs.length) {
-                input.value = dirs[i].name;
-                if (!state.harada) state.harada = { goal, directions: [] };
-                if (!state.harada.directions[i]) state.harada.directions[i] = { name: dirs[i].name, actions: [] };
-                state.harada.directions[i].actions = dirs[i].actions;
-                state.harada.directions[i].name = dirs[i].name;
-            } else {
-                input.value = '';
             }
         });
-        if (!state.harada) state.harada = { goal, directions: [] };
-        while (state.harada.directions.length < 8) {
-            state.harada.directions.push({ name: '', actions: [] });
+        if (actions.length > 0) {
+            dirs.push({ name: currentName, actions: actions });
         }
-        dirs.forEach((d, i) => {
-            if (i < state.harada.directions.length) {
-                state.harada.directions[i].name = d.name;
-                state.harada.directions[i].actions = d.actions;
-            }
-        });
-        state.harada.goal = goal;
-        saveData(state);
-        modalClose();
-        render(1);
-        toast('Данные из ИИ вставлены! Проверь и сохрани.');
-    };
+    }
+
+    // Если цель не найдена, берём имя первого направления
+    if (!goal && dirs.length > 0) {
+        goal = dirs[0].name;
+    }
+
+    // Заполняем форму
+    document.getElementById('haradaGoal').value = goal;
+    const dirInputs = document.querySelectorAll('.dir-name');
+    dirInputs.forEach((input, i) => {
+        if (i < dirs.length) {
+            input.value = dirs[i].name;
+            if (!state.harada) state.harada = { goal, directions: [] };
+            if (!state.harada.directions[i]) state.harada.directions[i] = { name: dirs[i].name, actions: [] };
+            state.harada.directions[i].actions = dirs[i].actions;
+            state.harada.directions[i].name = dirs[i].name;
+        } else {
+            input.value = '';
+        }
+    });
+    if (!state.harada) state.harada = { goal, directions: [] };
+    while (state.harada.directions.length < 8) {
+        state.harada.directions.push({ name: '', actions: [] });
+    }
+    dirs.forEach((d, i) => {
+        if (i < state.harada.directions.length) {
+            state.harada.directions[i].name = d.name;
+            state.harada.directions[i].actions = d.actions;
+        }
+    });
+    state.harada.goal = goal;
+    saveData(state);
+    modalClose();
+    render(1);
+    toast('Данные из ИИ вставлены! Проверь и сохрани.');
+};
 
     window.copyPrompt = function() {
         const text = PROMPT_TEXT;
